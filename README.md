@@ -11,32 +11,28 @@
 
 Monarch recently shut down their MCP solution. Other solutions are written in interpreted languages. I wanted a self-contained, single binary solution. And I like learning and building things.
 
-## What it does
+## Features
 
 - Lists accounts, transactions, categories, and budgets.
 - Fetches transaction details, cashflow summaries, and a financial overview.
-- Provides responsive terminal tables and a keyboard-driven transaction pager.
-- Emits machine-readable JSON for scripts and pipes.
-- Serves the same read-only operations as MCP tools over stdio.
-- Stores sessions in the operating system keyring—never a plaintext config file.
+- Nice TUI for browsing your transactions.
+- Structured output mode for all your agents <3
+- All features are available as MCP tools over stdio.
+- Stores sessions in the operating system keychain for safety.
 
-Write operations and arbitrary GraphQL are deliberately out of scope.
+No write operations (yet).
 
 ## Install
 
-### Tell an agent
+Tell Codex or another agent to set this up:
 
-Give your coding agent the following instructions:
-
-> Install Monarch CLI from `github.com/matteing/monarch-cli`. Inspect the
-> repository before running anything, use mise to download the pinned Go
-> toolchain, run the full audit, build and install the CLI, then configure its
-> local stdio MCP server. Discover the available commands with `monarch --help`
-> and the relevant subcommand help, inspect the MCP tools, and write your own
-> local skill for using the read-only interface safely. Do not ask me for
-> credentials or place them in commands—stop and ask me to run
-> `monarch auth login` in a real terminal. Finish by running `monarch doctor`
-> without printing my financial data.
+> Install Monarch CLI from `github.com/matteing/monarch-cli`. Review the source,
+> use its mise-pinned Go toolchain, run `mise run audit` and `mise run install`,
+> then configure stdio MCP. Discover commands with `monarch --help` and inspect
+> the MCP tools. Create a local skill named **Monarch CLI** with the exact
+> description `Query Monarch Money transactions, accounts, balances, and more.`
+> Keep it read-only. Never handle my credentials; ask me to run
+> `monarch auth login`. Verify with `monarch doctor` without exposing my data.
 
 ### Install manually
 
@@ -53,46 +49,18 @@ mise run install
 monarch --help
 ```
 
-The repository pins the supported Go toolchain in `mise.toml`; a separate Go
-installation is not required. On Unix-like systems, `mise run install` writes
-to `~/.local/bin` by default. On Windows it uses
-`%LOCALAPPDATA%\monarch-cli\bin`. Set `MONARCH_INSTALL_DIR` to choose another
-user-owned directory. The selected directory must be on `PATH`: add
-`$HOME/.local/bin` to your shell profile on Unix-like systems, or add the
-Windows directory to your user `PATH`, when it is not already present.
-
-Release builds report their tag through `monarch --version`. Source builds
-report `dev-<commit>` and append `-dirty` for local changes (or `dev-dirty`
-before a checkout has its first commit), so update verification is meaningful.
-
 ## Sign in
 
 ```sh
 monarch auth login
-monarch auth status
-monarch doctor
 ```
 
 Your password and MFA code are not stored anywhere. Monarch CLI keeps only the
-resulting session credential in your OS keyring. Cancellation is honored until
-the keyring commit begins. Native keyring writes cannot be canceled once they
-start, so the CLI waits for that commit and reports its result.
+resulting session credential in your OS keyring.
 
-If password login is blocked by CAPTCHA, you can import an existing browser
-session instead:
+### Multiple accounts
 
-```sh
-monarch auth login --method browser-session
-```
-
-Copy the `Cookie` request header from an authenticated request in a signed-in
-`app.monarch.com` tab. The prompt is hidden, and only the cookies required for
-authentication are retained in the OS keyring. There is no plaintext fallback.
-Saved records are strict and minimal; if an older record contains extra fields
-or cookies, replace it explicitly with `monarch auth login --force`.
-
-Profiles are just named keyring slots. Ignore them if you use one Monarch
-account. Names are 1–64 characters, start with a letter or digit, and otherwise
+We support profiles, which are just different keyring slots. Names are 1–64 characters, start with a letter or digit, and otherwise
 use only letters, digits, dots, underscores, or hyphens. If you use more than
 one account or household:
 
@@ -105,6 +73,7 @@ monarch --profile household auth logout
 ## Use the CLI
 
 ```text
+# some sample commands...
 monarch accounts list
 monarch transactions list [filters]
 monarch transactions get TRANSACTION_ID
@@ -114,17 +83,9 @@ monarch cashflow summary
 monarch overview
 ```
 
-Human-readable tables are the default. In a terminal, `transactions list`
-opens a responsive pager and groups transactions by month:
+Human-readable tables are the default.
 
-- `up` / `down` scroll the current page.
-- `left` / `right` load the previous or next API page.
-- `q`, `esc`, or `ctrl+c` close the pager.
-
-Visited pages are cached. Use `--group none` for one continuous table,
-`--limit` to set a page size, or `--cursor` to continue from an earlier result.
-
-For automation, use JSON:
+For agents, use JSON:
 
 ```sh
 monarch transactions list \
@@ -134,15 +95,19 @@ monarch transactions list \
   --output json
 ```
 
-JSON and piped table output return one bounded page. The JSON response includes
-an opaque `next_cursor` when another page is available. Reuse a cursor only with
-the same normalized filters and ordering that produced it. Amounts are exact
-decimal strings rather than JSON numbers.
+- JSON and piped table output return one bounded page.
+- The JSON response includes
+  an opaque `next_cursor` when another page is available.
+- Reuse a cursor only with
+  the same normalized filters and ordering that produced it.
+- Amounts are exact
+  decimal strings rather than JSON numbers.
 
 ## Use the MCP server
 
-Sign in once from a real terminal, then configure your MCP host with the
-absolute path to the binary:
+**You must login using a terminal app before setting this up**.
+
+After signing in, in your `mcp.json`:
 
 ```json
 {
@@ -155,27 +120,11 @@ absolute path to the binary:
 }
 ```
 
-The stdio server exposes:
-
-```text
-monarch_accounts_list
-monarch_transactions_list
-monarch_transaction_get
-monarch_categories_list
-monarch_budgets_get
-monarch_cashflow_summary
-monarch_financial_overview
-```
-
-Each tool has explicit input/output JSON Schema and read-only annotations. MCP
-stdout is reserved for JSON-RPC; diagnostics go to stderr. Stdio input is
-bounded to 512 KiB per newline-delimited message and 16 MiB per server process;
-clients with unusually long sessions should reconnect before the session
-budget is exhausted.
+Afterwards, ask it what it can do! We expose _just about everything_ that the CLI can do.
 
 ## Configuration
 
-Optional non-secret configuration lives at
+Some non-secret config lives at
 `$XDG_CONFIG_HOME/monarch-cli/config.json` on Unix-like systems, or the
 platform-equivalent user config directory:
 
@@ -193,6 +142,8 @@ Environment overrides are `MONARCH_PROFILE`, `MONARCH_OUTPUT`,
 `MONARCH_TIMEOUT`, `MONARCH_LOG_LEVEL`, and `MONARCH_LOG_FORMAT`. Flags take
 final precedence. None of these settings accepts credentials.
 
+### Contracts
+
 Stable exit codes are `2` for invalid input or a missing resource, `3` for
 authentication, `4` for a rate limit, `5` for upstream unavailability, and `6`
 for a keyring failure. Canceled commands use `130`; unexpected errors use `1`.
@@ -207,7 +158,7 @@ mise run                 # list tasks
 mise run fmt             # format source
 mise run check           # format, module, test, vet, staticcheck, and build gate
 mise run audit           # full gate: check, race, shuffle, coverage, vulnerabilities
-mise run test:coverage   # enforce the 65% statement coverage floor
+mise run test:coverage   # enforce the statement coverage floor
 mise run test:race       # race-enabled tests
 mise run vuln            # scan reachable code with pinned govulncheck
 mise run release:check   # validate release configuration
@@ -221,8 +172,7 @@ without printing your financial data:
 mise run test:live
 ```
 
-It requires a valid session in the selected profile. The normal test suite is
-offline: it does not touch a real Monarch account or keyring.
+It requires a valid session in the selected profile.
 
 Tagged releases are built for macOS, Linux, and Windows on `amd64` and `arm64`,
 with checksums. Push a tag such as `v0.1.0` to start the release workflow.

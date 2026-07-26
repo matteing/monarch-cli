@@ -40,30 +40,6 @@ func TestListAccountsUsesTokenAndFiltersHidden(t *testing.T) {
 	}
 }
 
-func TestCookieSessionHeaders(t *testing.T) {
-	transport := monarchRoundTripFunc(func(r *http.Request) (*http.Response, error) {
-		if r.Header.Get("X-Csrftoken") != "csrf" {
-			t.Errorf("missing CSRF header")
-		}
-		if r.Header.Get("Origin") != "https://app.monarch.com" {
-			t.Errorf("missing Origin header")
-		}
-		cookie := r.Header.Get("Cookie")
-		if !strings.Contains(cookie, "session_id=sid") || !strings.Contains(cookie, "csrftoken=csrf") {
-			t.Errorf("Cookie = %q", cookie)
-		}
-		return monarchResponse(http.StatusOK, `{"data":{"categories":[]}}`), nil
-	})
-	client, err := newClient(mustCookieSession(t, map[string]string{"session_id": "sid", "csrftoken": "csrf"}), &http.Client{Transport: transport}, "https://example.test/graphql")
-	if err != nil {
-		t.Fatal(err)
-	}
-	client.retryWait = noRetryWait
-	if _, err := client.ListCategories(context.Background()); err != nil {
-		t.Fatal(err)
-	}
-}
-
 func noRetryWait(context.Context, int, time.Duration) error { return nil }
 
 func TestTransientResponsesAreRetried(t *testing.T) {
@@ -261,15 +237,6 @@ func monarchResponse(status int, body string) *http.Response {
 func mustTokenSession(t *testing.T, token string) session.Session {
 	t.Helper()
 	value, err := session.NewToken(token)
-	if err != nil {
-		t.Fatal(err)
-	}
-	return value
-}
-
-func mustCookieSession(t *testing.T, cookies map[string]string) session.Session {
-	t.Helper()
-	value, err := session.NewCookie(cookies)
 	if err != nil {
 		t.Fatal(err)
 	}

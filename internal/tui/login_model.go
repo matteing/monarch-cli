@@ -62,7 +62,7 @@ type loginModel struct {
 }
 
 func newLoginModel(opts LoginOptions) loginModel {
-	inputs := newCredentialInputs(opts.Method)
+	inputs := newCredentialInputs()
 	inputs[0].Focus()
 
 	indicator := spinner.New(spinner.WithSpinner(spinner.Dot))
@@ -73,12 +73,7 @@ func newLoginModel(opts LoginOptions) loginModel {
 	}
 }
 
-func newCredentialInputs(method auth.Method) []textinput.Model {
-	if method == auth.MethodBrowserSession {
-		cookie := newInput("Cookie header", "session_id=…; csrftoken=…", true)
-		cookie.CharLimit = session.MaxCookieHeaderBytes
-		return []textinput.Model{cookie}
-	}
+func newCredentialInputs() []textinput.Model {
 	email := newInput("Email", "you@example.com", false)
 	email.CharLimit = auth.MaxEmailCharacters
 	password := newInput("Password", "", true)

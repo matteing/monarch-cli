@@ -12,84 +12,23 @@ import (
 	"github.com/matteing/monarch-cli/internal/apperr"
 )
 
-func TestParseCookieHeaderKeepsOnlyRequiredCookies(t *testing.T) {
-	value, err := ParseCookieHeader("session_id=abc=123; csrftoken=def; harmless=value=with=equals")
-	if err != nil {
-		t.Fatal(err)
-	}
-	if value.Mode != ModeCookie {
-		t.Fatalf("mode = %q, want %q", value.Mode, ModeCookie)
-	}
-	if value.Cookie("session_id") != "abc=123" || value.Cookie("csrftoken") != "def" {
-		t.Fatalf("required cookies were changed: %#v", value.Cookies())
-	}
-	if _, ok := value.Cookies()["harmless"]; ok {
-		t.Fatalf("non-authentication cookie was retained: %#v", value.Cookies())
-	}
-}
-
-func TestParseCookieHeaderRequiresMonarchCookies(t *testing.T) {
-	if _, err := ParseCookieHeader("foo=bar"); err == nil {
-		t.Fatal("ParseCookieHeader succeeded without required cookies")
-	}
-}
-
-func TestParseCookieHeaderExplainsCredentialVaultSizeLimit(t *testing.T) {
-	header := "session_id=" + strings.Repeat("s", maxSerializedSessionBytes) + "; csrftoken=c"
-	_, err := ParseCookieHeader(header)
-	if apperr.KindOf(err) != apperr.KindInvalidInput || !strings.Contains(err.Error(), "credential-vault size") {
-		t.Fatalf("oversized cookie error = %v", err)
-	}
-}
-
-func TestSessionConstructorsEstablishImmutableInvariants(t *testing.T) {
+func TestTokenConstructorEnforcesCredentialInvariants(t *testing.T) {
 	if _, err := NewToken(" token "); err == nil {
 		t.Fatal("NewToken accepted surrounding whitespace")
 	}
 	if _, err := NewToken("token\nInjected: yes"); err == nil {
 		t.Fatal("NewToken accepted a control character")
 	}
-
-	input := map[string]string{"session_id": "sid", "csrftoken": "csrf", "other": "discard"}
-	value, err := NewCookie(input)
-	if err != nil {
-		t.Fatal(err)
-	}
-	input["session_id"] = "mutated"
-	copy := value.Cookies()
-	copy["session_id"] = "also-mutated"
-	if value.Cookie("session_id") != "sid" {
-		t.Fatal("cookie session retained caller-owned mutable state")
-	}
-	if len(value.Cookies()) != 2 {
-		t.Fatalf("cookies = %#v, want only required credentials", value.Cookies())
-	}
-	if _, err := NewCookie(map[string]string{"session_id": "sid"}); err == nil {
-		t.Fatal("NewCookie accepted incomplete credentials")
-	}
-}
-
-func TestSessionRejectsMixedCredentialModes(t *testing.T) {
-	token := mustToken(t, "token")
-	token.cookies = map[string]string{"session_id": "sid", "csrftoken": "csrf"}
-	if err := token.Validate(); err == nil {
-		t.Fatal("token session accepted browser cookies")
-	}
-
-	cookie := mustCookie(t, map[string]string{"session_id": "sid", "csrftoken": "csrf"})
-	cookie.token = "token"
-	if err := cookie.Validate(); err == nil {
-		t.Fatal("cookie session accepted a token")
-	}
 }
 
 func TestKeyringStoreLoadRejectsNonMinimalRecordsWithoutWriting(t *testing.T) {
 	records := map[string]string{
-		"extra cookie":    `{"version":1,"mode":"cookie","cookies":{"analytics":"nope","csrftoken":"csrf","session_id":"sid"},"created_at":"2026-07-25T12:00:00Z"}`,
-		"unknown field":   `{"version":1,"mode":"token","token":"token","created_at":"2026-07-25T12:00:00Z","password":"must-not-be-ignored"}`,
-		"duplicate field": `{"version":1,"mode":"token","token":"old","token":"new","created_at":"2026-07-25T12:00:00Z"}`,
-		"field alias":     `{"version":1,"mode":"token","Token":"token","created_at":"2026-07-25T12:00:00Z"}`,
-		"redundant null":  `{"version":1,"mode":"token","token":"token","cookies":null,"created_at":"2026-07-25T12:00:00Z"}`,
+		"retired cookie mode":   `{"version":1,"mode":"cookie","created_at":"2026-07-25T12:00:00Z"}`,
+		"retired cookie fields": `{"version":1,"mode":"cookie","cookies":{"csrftoken":"csrf","session_id":"sid"},"created_at":"2026-07-25T12:00:00Z"}`,
+		"unknown field":         `{"version":1,"mode":"token","token":"token","created_at":"2026-07-25T12:00:00Z","password":"must-not-be-ignored"}`,
+		"duplicate field":       `{"version":1,"mode":"token","token":"old","token":"new","created_at":"2026-07-25T12:00:00Z"}`,
+		"field alias":           `{"version":1,"mode":"token","Token":"token","created_at":"2026-07-25T12:00:00Z"}`,
+		"redundant null":        `{"version":1,"mode":"token","token":"token","cookies":null,"created_at":"2026-07-25T12:00:00Z"}`,
 	}
 	for name, record := range records {
 		t.Run(name, func(t *testing.T) {
@@ -129,19 +68,19 @@ func TestValidateProfile(t *testing.T) {
 func TestKeyringStoreRoundTripUsesInjectedBackend(t *testing.T) {
 	backend := &fakeKeyring{}
 	store := KeyringStore{backend: backend, readBlocked: func(_, _ string) bool { return false }}
-	value := mustCookie(t, map[string]string{"session_id": "sid", "csrftoken": "csrf", "other": "discard"})
+	value := mustToken(t, "token")
 	if err := store.Save("default", value); err != nil {
 		t.Fatal(err)
 	}
-	if backend.account != "session:default" || strings.Contains(backend.value, "other") {
+	if backend.account != "session:default" {
 		t.Fatalf("unexpected persisted keyring record: account=%q value=%s", backend.account, backend.value)
 	}
 	loaded, err := store.Load("default")
 	if err != nil {
 		t.Fatal(err)
 	}
-	if loaded.Cookie("session_id") != "sid" || loaded.Cookie("csrftoken") != "csrf" {
-		t.Fatalf("loaded session = %#v", loaded.Cookies())
+	if loaded.Mode != ModeToken || loaded.Token() != "token" {
+		t.Fatalf("loaded session = mode %q token %q", loaded.Mode, loaded.Token())
 	}
 	if err := store.Delete("default"); err != nil {
 		t.Fatal(err)
@@ -234,31 +173,6 @@ func TestKeyringAccessFailureClassification(t *testing.T) {
 	}
 }
 
-func FuzzParseCookieHeader(f *testing.F) {
-	for _, seed := range []string{
-		"session_id=sid; csrftoken=csrf",
-		"session_id=a=b; csrftoken=c; ignored=value",
-		"session_id=bad\r\nvalue; csrftoken=csrf",
-		"",
-	} {
-		f.Add(seed)
-	}
-	f.Fuzz(func(t *testing.T, header string) {
-		value, err := ParseCookieHeader(header)
-		if err != nil {
-			return
-		}
-		if err := value.Validate(); err != nil {
-			t.Fatalf("successful parse returned invalid session: %v", err)
-		}
-		for name := range value.Cookies() {
-			if !requiredCookieName(name) {
-				t.Fatalf("unexpected cookie %q survived parsing", name)
-			}
-		}
-	})
-}
-
 type fakeKeyring struct {
 	value    string
 	account  string
@@ -286,15 +200,6 @@ func (f *fakeKeyring) Delete(_, _ string) error {
 func mustToken(t *testing.T, token string) Session {
 	t.Helper()
 	value, err := NewToken(token)
-	if err != nil {
-		t.Fatal(err)
-	}
-	return value
-}
-
-func mustCookie(t *testing.T, cookies map[string]string) Session {
-	t.Helper()
-	value, err := NewCookie(cookies)
 	if err != nil {
 		t.Fatal(err)
 	}

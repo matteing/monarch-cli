@@ -12,24 +12,6 @@ import (
 )
 
 func (m loginModel) submitCredentials() (tea.Model, tea.Cmd) {
-	if m.opts.Method == auth.MethodBrowserSession {
-		raw := strings.TrimSpace(m.inputs[0].Value())
-		if raw == "" {
-			m.err = errors.New("paste the Cookie header to continue")
-			return m, nil
-		}
-		value, err := m.opts.ParseCookies(raw)
-		m.inputs[0].Reset()
-		if err != nil {
-			m.err = err
-			return m, nil
-		}
-		m.stage = stageWorking
-		m.status = "Verifying session…"
-		m.err = nil
-		return m, tea.Batch(m.spinner.Tick, m.verify(value))
-	}
-
 	email := strings.TrimSpace(m.inputs[0].Value())
 	password := m.inputs[1].Value()
 	if email == "" {

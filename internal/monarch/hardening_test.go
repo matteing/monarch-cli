@@ -6,7 +6,6 @@ import (
 	"errors"
 	"net/http"
 	"strings"
-	"sync"
 	"sync/atomic"
 	"testing"
 	"time"
@@ -418,35 +417,6 @@ func TestTransactionDetailProjectionMatchesModel(t *testing.T) {
 	if transaction.Goal != nil {
 		t.Fatalf("null goal became %+v", transaction.Goal)
 	}
-}
-
-func TestClientSnapshotsCookieAuthentication(t *testing.T) {
-	input := map[string]string{"session_id": "sid", "csrftoken": "csrf"}
-	value := mustCookieSession(t, input)
-	client := newTestClientWithSession(t, value, monarchRoundTripFunc(func(request *http.Request) (*http.Response, error) {
-		if got := request.Header.Get("Cookie"); !strings.Contains(got, "session_id=sid") || !strings.Contains(got, "csrftoken=csrf") {
-			t.Errorf("Cookie = %q", got)
-		}
-		if got := request.Header.Get("X-Csrftoken"); got != "csrf" {
-			t.Errorf("X-Csrftoken = %q", got)
-		}
-		return monarchResponse(http.StatusOK, `{"data":{"categories":[]}}`), nil
-	}))
-	input["session_id"] = "mutated"
-	copy := value.Cookies()
-	copy["csrftoken"] = "mutated"
-
-	var group sync.WaitGroup
-	for range 32 {
-		group.Add(1)
-		go func() {
-			defer group.Done()
-			if _, err := client.ListCategories(context.Background()); err != nil {
-				t.Error(err)
-			}
-		}()
-	}
-	group.Wait()
 }
 
 func TestNewClientRejectsRedirectsAndInvalidTimeout(t *testing.T) {

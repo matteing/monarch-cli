@@ -14,7 +14,6 @@ import (
 	"charm.land/lipgloss/v2"
 
 	"github.com/matteing/monarch-cli/internal/apperr"
-	"github.com/matteing/monarch-cli/internal/auth"
 	"github.com/matteing/monarch-cli/internal/session"
 )
 
@@ -27,6 +26,7 @@ func TestLoginCancellationUsesStableApplicationKind(t *testing.T) {
 func TestRunLoginPreservesEscapeParentCancelAndDeadline(t *testing.T) {
 	start := func(t *testing.T, ctx context.Context) (*io.PipeWriter, <-chan error) {
 		t.Helper()
+		value := testToken(t, "token")
 		input, keyboard := io.Pipe()
 		t.Cleanup(func() {
 			input.Close()
@@ -36,10 +36,12 @@ func TestRunLoginPreservesEscapeParentCancelAndDeadline(t *testing.T) {
 		go func() {
 			_, err := RunLogin(LoginOptions{
 				Context: ctx, Input: input, Output: io.Discard,
-				Method: auth.MethodBrowserSession, Profile: "default",
-				ParseCookies: session.ParseCookieHeader,
-				Verify:       func(context.Context, session.Session) error { return nil },
-				Save:         func(string, session.Session) error { return nil },
+				Profile: "default",
+				Authenticate: func(context.Context, string, string, string) (session.Session, error) {
+					return value, nil
+				},
+				Verify: func(context.Context, session.Session) error { return nil },
+				Save:   func(string, session.Session) error { return nil },
 			})
 			done <- err
 		}()
@@ -92,7 +94,7 @@ func TestPasswordLoginExplainsSecretStorage(t *testing.T) {
 		}
 	}
 
-	model := newLoginModel(LoginOptions{Method: auth.MethodPassword, Profile: "default"})
+	model := newLoginModel(LoginOptions{Profile: "default"})
 	if model.inputs[1].EchoMode != textinput.EchoPassword {
 		t.Fatal("password input is not masked")
 	}
@@ -107,24 +109,8 @@ func TestPasswordLoginExplainsSecretStorage(t *testing.T) {
 	}
 }
 
-func TestBrowserLoginExplainsMinimalCookieStorage(t *testing.T) {
-	for _, phrase := range []string{"No email or password", "session_id", "csrftoken"} {
-		if !strings.Contains(BrowserPrivacyNotice, phrase) {
-			t.Fatalf("browser privacy notice does not contain %q: %s", phrase, BrowserPrivacyNotice)
-		}
-	}
-
-	model := newLoginModel(LoginOptions{Method: auth.MethodBrowserSession, Profile: "default"})
-	if model.inputs[0].EchoMode != textinput.EchoPassword {
-		t.Fatal("browser cookie input is not masked")
-	}
-	if !strings.Contains(strings.Join(strings.Fields(model.View().Content), " "), "No email or password") {
-		t.Fatal("browser privacy notice is not visible in the login form")
-	}
-}
-
 func TestLoginResizesInputsControlsAndTinyView(t *testing.T) {
-	model := newLoginModel(LoginOptions{Method: auth.MethodPassword, Profile: "default"})
+	model := newLoginModel(LoginOptions{Profile: "default"})
 	next, _ := model.Update(tea.WindowSizeMsg{Width: 34, Height: 12})
 	model = next.(loginModel)
 	if model.inputs[0].Width() != 20 || model.inputs[1].Width() != 20 {
@@ -144,7 +130,7 @@ func TestPasswordLoginMFAKeyboardFlow(t *testing.T) {
 	var receivedEmail, receivedPassword, receivedCode string
 	var verified, saved bool
 	opts := LoginOptions{
-		Context: context.Background(), Method: auth.MethodPassword, Profile: "default",
+		Context: context.Background(), Profile: "default",
 		Authenticate: func(_ context.Context, email, password, code string) (session.Session, error) {
 			receivedEmail, receivedPassword, receivedCode = email, password, code
 			if code == "" {
@@ -210,7 +196,7 @@ func TestPasswordLoginMFAKeyboardFlow(t *testing.T) {
 }
 
 func TestRepeatedMFARequiredStaysOnMFAForm(t *testing.T) {
-	model := newLoginModel(LoginOptions{Method: auth.MethodPassword, Profile: "default"})
+	model := newLoginModel(LoginOptions{Profile: "default"})
 	model.pendingEmail = "person@example.com"
 	model.pendingPassword = "secret"
 	mfaErr := apperr.New(apperr.KindMFARequired, "login", "MFA code was rejected", nil)
@@ -232,7 +218,7 @@ func TestCancelDuringVerifyCancelsWorkAndNeverSaves(t *testing.T) {
 	started := make(chan struct{})
 	var saves atomic.Int32
 	model := newLoginModel(LoginOptions{
-		Context: ctx, Method: auth.MethodPassword, Profile: "default",
+		Context: ctx, Profile: "default",
 		Verify: func(ctx context.Context, _ session.Session) error {
 			close(started)
 			<-ctx.Done()
@@ -265,7 +251,7 @@ func TestCanceledContextBeforeSaveCommandNeverCallsSave(t *testing.T) {
 	ctx, cancel := context.WithCancel(context.Background())
 	var saves atomic.Int32
 	model := newLoginModel(LoginOptions{
-		Context: ctx, Method: auth.MethodPassword, Profile: "default",
+		Context: ctx, Profile: "default",
 		Save: func(string, session.Session) error {
 			saves.Add(1)
 			return nil
@@ -292,22 +278,25 @@ func TestRunLoginWaitsForStartedCredentialVaultCommit(t *testing.T) {
 		err   error
 	}
 	done := make(chan outcome, 1)
+	value := testToken(t, "token")
 	go func() {
-		value, err := RunLogin(LoginOptions{
+		result, err := RunLogin(LoginOptions{
 			Context: ctx, Input: input, Output: io.Discard,
-			Method: auth.MethodBrowserSession, Profile: "default",
-			ParseCookies: session.ParseCookieHeader,
-			Verify:       func(context.Context, session.Session) error { return nil },
+			Profile: "default",
+			Authenticate: func(context.Context, string, string, string) (session.Session, error) {
+				return value, nil
+			},
+			Verify: func(context.Context, session.Session) error { return nil },
 			Save: func(string, session.Session) error {
 				close(started)
 				<-release
 				return nil
 			},
 		})
-		done <- outcome{value: value, err: err}
+		done <- outcome{value: result, err: err}
 	}()
 
-	if _, err := io.WriteString(keyboard, "session_id=sid; csrftoken=csrf\r"); err != nil {
+	if _, err := io.WriteString(keyboard, "person@example.com\rsecret\r"); err != nil {
 		t.Fatal(err)
 	}
 	select {
@@ -324,7 +313,7 @@ func TestRunLoginWaitsForStartedCredentialVaultCommit(t *testing.T) {
 	close(release)
 	select {
 	case result := <-done:
-		if result.err != nil || result.value.Mode != session.ModeCookie {
+		if result.err != nil || result.value.Mode != session.ModeToken {
 			t.Fatalf("RunLogin result = mode %q, error %v", result.value.Mode, result.err)
 		}
 	case <-time.After(2 * time.Second):
@@ -340,12 +329,15 @@ func TestRunLoginReturnsCancellationAfterStartedCommitFails(t *testing.T) {
 	started := make(chan struct{})
 	release := make(chan struct{})
 	done := make(chan error, 1)
+	value := testToken(t, "token")
 	go func() {
 		_, err := RunLogin(LoginOptions{
 			Context: ctx, Input: input, Output: io.Discard,
-			Method: auth.MethodBrowserSession, Profile: "default",
-			ParseCookies: session.ParseCookieHeader,
-			Verify:       func(context.Context, session.Session) error { return nil },
+			Profile: "default",
+			Authenticate: func(context.Context, string, string, string) (session.Session, error) {
+				return value, nil
+			},
+			Verify: func(context.Context, session.Session) error { return nil },
 			Save: func(string, session.Session) error {
 				close(started)
 				<-release
@@ -354,7 +346,7 @@ func TestRunLoginReturnsCancellationAfterStartedCommitFails(t *testing.T) {
 		})
 		done <- err
 	}()
-	if _, err := io.WriteString(keyboard, "session_id=sid; csrftoken=csrf\r"); err != nil {
+	if _, err := io.WriteString(keyboard, "person@example.com\rsecret\r"); err != nil {
 		t.Fatal(err)
 	}
 	select {
@@ -375,7 +367,7 @@ func TestRunLoginReturnsCancellationAfterStartedCommitFails(t *testing.T) {
 }
 
 func TestLoginShowsRecoverableAndSanitizedInlineErrors(t *testing.T) {
-	model := newLoginModel(LoginOptions{Method: auth.MethodPassword, Profile: "default"})
+	model := newLoginModel(LoginOptions{Profile: "default"})
 	model.focused = 1
 	next, command := model.Update(tea.KeyPressMsg{Code: tea.KeyEnter})
 	model = next.(loginModel)
@@ -390,7 +382,7 @@ func TestLoginShowsRecoverableAndSanitizedInlineErrors(t *testing.T) {
 }
 
 func TestLoginProjectsVisibleInputWithoutChangingCredentials(t *testing.T) {
-	model := newLoginModel(LoginOptions{Method: auth.MethodPassword, Profile: "default"})
+	model := newLoginModel(LoginOptions{Profile: "default"})
 	raw := "\u0301person\u202e@example.com"
 	model.inputs[0].SetValue(raw)
 	model.inputs[0].Blur()
@@ -427,7 +419,7 @@ func TestLoginProjectsVisibleInputWithoutChangingCredentials(t *testing.T) {
 func TestValidateLoginOptions(t *testing.T) {
 	valid := LoginOptions{
 		Context: context.Background(), Input: strings.NewReader(""), Output: &strings.Builder{},
-		Method: auth.MethodPassword, Profile: "default",
+		Profile: "default",
 		Authenticate: func(context.Context, string, string, string) (session.Session, error) {
 			return testToken(t, "token"), nil
 		},
@@ -440,7 +432,6 @@ func TestValidateLoginOptions(t *testing.T) {
 	for name, mutate := range map[string]func(*LoginOptions){
 		"context": func(opts *LoginOptions) { opts.Context = nil },
 		"io":      func(opts *LoginOptions) { opts.Output = nil },
-		"method":  func(opts *LoginOptions) { opts.Method = "unknown" },
 		"profile": func(opts *LoginOptions) { opts.Profile = "../bad" },
 		"auth":    func(opts *LoginOptions) { opts.Authenticate = nil },
 		"verify":  func(opts *LoginOptions) { opts.Verify = nil },

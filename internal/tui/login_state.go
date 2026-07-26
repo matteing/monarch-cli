@@ -4,7 +4,6 @@ import (
 	"charm.land/bubbles/v2/textinput"
 	tea "charm.land/bubbletea/v2"
 
-	"github.com/matteing/monarch-cli/internal/auth"
 	"github.com/matteing/monarch-cli/internal/session"
 )
 
@@ -43,9 +42,9 @@ func (m loginModel) showMFAForm(err error) (tea.Model, tea.Cmd) {
 func (m loginModel) showCredentialForm(err error) (tea.Model, tea.Cmd) {
 	email := m.pendingEmail
 	m.clearSecrets()
-	m.inputs = newCredentialInputs(m.opts.Method)
+	m.inputs = newCredentialInputs()
 	m.focused = 0
-	if m.opts.Method == auth.MethodPassword && email != "" {
+	if email != "" {
 		m.inputs[0].SetValue(email)
 		m.inputs[0].Blur()
 		m.focused = 1

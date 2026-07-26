@@ -111,10 +111,10 @@ func (a *Authenticator) Login(ctx context.Context, email, password, totp string)
 			return session.Session{}, apperr.New(apperr.KindUnavailable, op, "Monarch returned malformed login JSON", decodeErr)
 		}
 		if strings.Count(decoded.Token, ".") == 2 {
-			return session.Session{}, apperr.New(apperr.KindAuth, op, "Monarch returned a short-lived feature token; use browser-session login", nil)
+			return session.Session{}, apperr.New(apperr.KindAuth, op, "Monarch returned an unsupported short-lived feature token", nil)
 		}
 		if expiration := strings.TrimSpace(string(decoded.TokenExpiration)); expiration != "" && expiration != "null" && expiration != `"null"` {
-			return session.Session{}, apperr.New(apperr.KindAuth, op, "Monarch returned a short-lived token; use browser-session login", nil)
+			return session.Session{}, apperr.New(apperr.KindAuth, op, "Monarch returned an unsupported short-lived token", nil)
 		}
 		value, err := session.NewToken(decoded.Token)
 		if err != nil {
@@ -130,7 +130,7 @@ func (a *Authenticator) Login(ctx context.Context, email, password, totp string)
 	}
 	if resp.StatusCode == http.StatusForbidden {
 		if decodeErr == nil && strings.EqualFold(decoded.ErrorCode, "CAPTCHA_REQUIRED") {
-			return session.Session{}, &apperr.Error{Kind: apperr.KindAuth, Op: op, Message: "programmatic login is blocked by CAPTCHA; retry with `monarch auth login --method browser-session`", StatusCode: resp.StatusCode}
+			return session.Session{}, &apperr.Error{Kind: apperr.KindAuth, Op: op, Message: "programmatic login is blocked by CAPTCHA", StatusCode: resp.StatusCode}
 		}
 		if decodeErr == nil && mfaRequired(decoded.ErrorCode, decoded.Detail) {
 			message := "MFA code required"
@@ -148,7 +148,7 @@ func (a *Authenticator) Login(ctx context.Context, email, password, totp string)
 		}
 	}
 	if resp.StatusCode == http.StatusUnauthorized || resp.StatusCode == http.StatusForbidden {
-		return session.Session{}, &apperr.Error{Kind: apperr.KindAuth, Op: op, Message: "Monarch rejected the login; check credentials or use browser-session login", StatusCode: resp.StatusCode}
+		return session.Session{}, &apperr.Error{Kind: apperr.KindAuth, Op: op, Message: "Monarch rejected the login; check your credentials", StatusCode: resp.StatusCode}
 	}
 	return session.Session{}, &apperr.Error{Kind: apperr.KindUnavailable, Op: op, Message: fmt.Sprintf("Monarch login failed with HTTP %d", resp.StatusCode), StatusCode: resp.StatusCode, Retryable: resp.StatusCode >= 500}
 }
