@@ -300,8 +300,11 @@ func TestSchemaRejectsInvalidInputBeforeReader(t *testing.T) {
 		{"start_date": "2026-07-01"},
 		{"account_ids": []string{""}},
 	} {
-		_, err := session.CallTool(ctx, &mcp.CallToolParams{Name: "monarch_transactions_list", Arguments: args})
-		if err == nil {
+		result, err := session.CallTool(ctx, &mcp.CallToolParams{Name: "monarch_transactions_list", Arguments: args})
+		if err != nil {
+			t.Fatalf("arguments %+v returned protocol error: %v", args, err)
+		}
+		if !result.IsError {
 			t.Fatalf("arguments %+v were accepted", args)
 		}
 	}

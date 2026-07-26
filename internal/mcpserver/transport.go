@@ -28,11 +28,27 @@ var (
 func RunIO(ctx context.Context, reader monarch.Reader, version string, input io.Reader, output io.Writer, logger *slog.Logger) error {
 	boundedInput := newBoundedNDJSONReader(input, maxMCPMessageBytes, maxMCPSessionBytes)
 	transport := &mcp.IOTransport{Reader: io.NopCloser(boundedInput), Writer: nopWriteCloser{output}}
-	err := NewWithLogger(reader, version, logger).Run(ctx, transport)
+	server := NewWithLogger(reader, version, logger)
+	server.AddReceivingMiddleware(cancelWithServer(ctx))
+	err := server.Run(ctx, transport)
 	if errors.Is(err, errMCPMessageTooLarge) || errors.Is(err, errMCPSessionTooLarge) {
 		return apperr.New(apperr.KindInvalidInput, "serve MCP", "MCP input exceeded the safety limit", err)
 	}
 	return err
+}
+
+func cancelWithServer(serverContext context.Context) mcp.Middleware {
+	return func(next mcp.MethodHandler) mcp.MethodHandler {
+		return func(requestContext context.Context, method string, request mcp.Request) (mcp.Result, error) {
+			ctx, cancel := context.WithCancel(requestContext)
+			stop := context.AfterFunc(serverContext, cancel)
+			defer func() {
+				stop()
+				cancel()
+			}()
+			return next(ctx, method, request)
+		}
+	}
 }
 
 type nopWriteCloser struct{ io.Writer }
