@@ -1,9 +1,6 @@
 # Monarch CLI
 
-This is an unofficial, read-only Monarch Money CLI.
-
-It's a single,
-self-contained Go binary with a nice terminal UI and an accompanying MCP server.
+This is an unofficial, read-only Monarch Money CLI. It also exposes all its functionality through an MCP server.
 
 > [!IMPORTANT]
 > I built this for myself! This project uses Monarch's private API, so it may break occasionally. It is not affiliated with or endorsed by Monarch.
