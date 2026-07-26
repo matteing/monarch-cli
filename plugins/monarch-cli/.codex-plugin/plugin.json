@@ -1,0 +1,39 @@
+{
+  "name": "monarch-cli",
+  "version": "0.1.0+codex.20260726055054",
+  "description": "Read-only Monarch Money tools for Codex, backed by the local Monarch CLI.",
+  "author": {
+    "name": "Sergio Mattei",
+    "email": "me@matteing.com",
+    "url": "https://github.com/matteing"
+  },
+  "homepage": "https://github.com/matteing/monarch-cli",
+  "repository": "https://github.com/matteing/monarch-cli",
+  "license": "MIT",
+  "keywords": [
+    "monarch-money",
+    "personal-finance",
+    "mcp",
+    "read-only"
+  ],
+  "skills": "./skills/",
+  "mcpServers": "./.mcp.json",
+  "interface": {
+    "displayName": "Monarch CLI",
+    "shortDescription": "Read your Monarch Money data safely",
+    "longDescription": "Connect Codex to an authenticated local Monarch CLI session for read-only accounts, transactions, categories, budgets, cashflow, and financial overview tools.",
+    "developerName": "Sergio Mattei",
+    "category": "Productivity",
+    "capabilities": [
+      "Interactive",
+      "Read"
+    ],
+    "websiteURL": "https://github.com/matteing/monarch-cli",
+    "brandColor": "#F2A65A",
+    "defaultPrompt": [
+      "Show me my current financial overview",
+      "Summarize my cashflow this month",
+      "Find my recent coffee transactions"
+    ]
+  }
+}

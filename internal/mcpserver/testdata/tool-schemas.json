@@ -1,0 +1,1981 @@
+[
+  {
+    "name": "monarch_accounts_list",
+    "input_schema": {
+      "additionalProperties": false,
+      "properties": {
+        "include_deactivated": {
+          "default": false,
+          "description": "Include deactivated accounts; defaults to false.",
+          "type": "boolean"
+        },
+        "include_hidden": {
+          "default": false,
+          "description": "Include accounts hidden in Monarch; defaults to false.",
+          "type": "boolean"
+        }
+      },
+      "type": "object"
+    },
+    "output_schema": {
+      "additionalProperties": false,
+      "properties": {
+        "accounts": {
+          "items": {
+            "additionalProperties": false,
+            "properties": {
+              "current_balance": {
+                "type": "string"
+              },
+              "data_provider": {
+                "type": "string"
+              },
+              "deactivated_at": {
+                "type": "string"
+              },
+              "display_balance": {
+                "type": "string"
+              },
+              "display_last_updated_at": {
+                "type": "string"
+              },
+              "display_name": {
+                "type": "string"
+              },
+              "holdings_count": {
+                "type": "integer"
+              },
+              "id": {
+                "type": "string"
+              },
+              "include_balance_in_net_worth": {
+                "type": "boolean"
+              },
+              "include_in_net_worth": {
+                "type": "boolean"
+              },
+              "is_asset": {
+                "type": "boolean"
+              },
+              "is_hidden": {
+                "type": "boolean"
+              },
+              "is_manual": {
+                "type": "boolean"
+              },
+              "limit": {
+                "type": "string"
+              },
+              "logo_url": {
+                "type": "string"
+              },
+              "mask": {
+                "type": "string"
+              },
+              "subtype": {
+                "additionalProperties": false,
+                "properties": {
+                  "display": {
+                    "type": "string"
+                  },
+                  "name": {
+                    "type": "string"
+                  }
+                },
+                "required": [
+                  "name",
+                  "display"
+                ],
+                "type": "object"
+              },
+              "transactions_count": {
+                "type": "integer"
+              },
+              "type": {
+                "additionalProperties": false,
+                "properties": {
+                  "display": {
+                    "type": "string"
+                  },
+                  "name": {
+                    "type": "string"
+                  }
+                },
+                "required": [
+                  "name",
+                  "display"
+                ],
+                "type": "object"
+              },
+              "updated_at": {
+                "type": "string"
+              }
+            },
+            "required": [
+              "id",
+              "display_name",
+              "type",
+              "subtype",
+              "display_balance",
+              "current_balance",
+              "is_hidden",
+              "is_asset",
+              "include_in_net_worth",
+              "include_balance_in_net_worth",
+              "is_manual",
+              "transactions_count",
+              "holdings_count"
+            ],
+            "type": "object"
+          },
+          "type": "array"
+        }
+      },
+      "required": [
+        "accounts"
+      ],
+      "type": "object"
+    }
+  },
+  {
+    "name": "monarch_budgets_get",
+    "input_schema": {
+      "additionalProperties": false,
+      "dependentRequired": {
+        "end_month": [
+          "start_month"
+        ],
+        "start_month": [
+          "end_month"
+        ]
+      },
+      "properties": {
+        "end_month": {
+          "description": "Inclusive end month; provide with start_month or omit both for the current month. Range cannot exceed ten years.",
+          "pattern": "^[0-9]{4}-(0[1-9]|1[0-2])$",
+          "type": "string"
+        },
+        "start_month": {
+          "description": "Inclusive start month; provide with end_month or omit both for the current month. Range cannot exceed ten years.",
+          "pattern": "^[0-9]{4}-(0[1-9]|1[0-2])$",
+          "type": "string"
+        }
+      },
+      "type": "object"
+    },
+    "output_schema": {
+      "additionalProperties": false,
+      "properties": {
+        "categories": {
+          "items": {
+            "additionalProperties": false,
+            "properties": {
+              "category": {
+                "additionalProperties": false,
+                "properties": {
+                  "id": {
+                    "type": "string"
+                  },
+                  "name": {
+                    "type": "string"
+                  }
+                },
+                "required": [
+                  "id",
+                  "name"
+                ],
+                "type": "object"
+              },
+              "monthly_amounts": {
+                "items": {
+                  "additionalProperties": false,
+                  "properties": {
+                    "actual_amount": {
+                      "type": "string"
+                    },
+                    "month": {
+                      "type": "string"
+                    },
+                    "planned_cash_flow_amount": {
+                      "type": "string"
+                    },
+                    "planned_set_aside_amount": {
+                      "type": "string"
+                    },
+                    "previous_month_rollover_amount": {
+                      "type": "string"
+                    },
+                    "remaining_amount": {
+                      "type": "string"
+                    },
+                    "rollover_type": {
+                      "type": "string"
+                    }
+                  },
+                  "required": [
+                    "month",
+                    "planned_cash_flow_amount",
+                    "actual_amount",
+                    "remaining_amount"
+                  ],
+                  "type": "object"
+                },
+                "type": "array"
+              }
+            },
+            "required": [
+              "category",
+              "monthly_amounts"
+            ],
+            "type": "object"
+          },
+          "type": "array"
+        },
+        "end_month": {
+          "type": "string"
+        },
+        "groups": {
+          "items": {
+            "additionalProperties": false,
+            "properties": {
+              "category_group": {
+                "additionalProperties": false,
+                "properties": {
+                  "id": {
+                    "type": "string"
+                  },
+                  "name": {
+                    "type": "string"
+                  },
+                  "type": {
+                    "type": "string"
+                  }
+                },
+                "required": [
+                  "id",
+                  "name",
+                  "type"
+                ],
+                "type": "object"
+              },
+              "monthly_amounts": {
+                "items": {
+                  "additionalProperties": false,
+                  "properties": {
+                    "actual_amount": {
+                      "type": "string"
+                    },
+                    "month": {
+                      "type": "string"
+                    },
+                    "planned_cash_flow_amount": {
+                      "type": "string"
+                    },
+                    "planned_set_aside_amount": {
+                      "type": "string"
+                    },
+                    "previous_month_rollover_amount": {
+                      "type": "string"
+                    },
+                    "remaining_amount": {
+                      "type": "string"
+                    },
+                    "rollover_type": {
+                      "type": "string"
+                    }
+                  },
+                  "required": [
+                    "month",
+                    "planned_cash_flow_amount",
+                    "actual_amount",
+                    "remaining_amount"
+                  ],
+                  "type": "object"
+                },
+                "type": "array"
+              }
+            },
+            "required": [
+              "category_group",
+              "monthly_amounts"
+            ],
+            "type": "object"
+          },
+          "type": "array"
+        },
+        "start_month": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "start_month",
+        "end_month",
+        "categories",
+        "groups"
+      ],
+      "type": "object"
+    }
+  },
+  {
+    "name": "monarch_cashflow_summary",
+    "input_schema": {
+      "additionalProperties": false,
+      "dependentRequired": {
+        "end_date": [
+          "start_date"
+        ],
+        "start_date": [
+          "end_date"
+        ]
+      },
+      "properties": {
+        "end_date": {
+          "description": "Inclusive end date; provide with start_date or omit both for the current month. Range cannot exceed ten years.",
+          "pattern": "^[0-9]{4}-(0[1-9]|1[0-2])-(0[1-9]|[12][0-9]|3[01])$",
+          "type": "string"
+        },
+        "start_date": {
+          "description": "Inclusive start date; provide with end_date or omit both for the current month. Range cannot exceed ten years.",
+          "pattern": "^[0-9]{4}-(0[1-9]|1[0-2])-(0[1-9]|[12][0-9]|3[01])$",
+          "type": "string"
+        }
+      },
+      "type": "object"
+    },
+    "output_schema": {
+      "additionalProperties": false,
+      "properties": {
+        "end_date": {
+          "type": "string"
+        },
+        "savings": {
+          "type": "string"
+        },
+        "savings_rate": {
+          "type": "string"
+        },
+        "start_date": {
+          "type": "string"
+        },
+        "sum_expense": {
+          "type": "string"
+        },
+        "sum_income": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "start_date",
+        "end_date",
+        "sum_income",
+        "sum_expense",
+        "savings",
+        "savings_rate"
+      ],
+      "type": "object"
+    }
+  },
+  {
+    "name": "monarch_categories_list",
+    "input_schema": {
+      "additionalProperties": false,
+      "type": "object"
+    },
+    "output_schema": {
+      "additionalProperties": false,
+      "properties": {
+        "categories": {
+          "items": {
+            "additionalProperties": false,
+            "properties": {
+              "created_at": {
+                "type": "string"
+              },
+              "group": {
+                "additionalProperties": false,
+                "properties": {
+                  "id": {
+                    "type": "string"
+                  },
+                  "name": {
+                    "type": "string"
+                  },
+                  "type": {
+                    "type": "string"
+                  }
+                },
+                "required": [
+                  "id",
+                  "name",
+                  "type"
+                ],
+                "type": "object"
+              },
+              "icon": {
+                "type": "string"
+              },
+              "id": {
+                "type": "string"
+              },
+              "is_disabled": {
+                "type": "boolean"
+              },
+              "is_system_category": {
+                "type": "boolean"
+              },
+              "name": {
+                "type": "string"
+              },
+              "order": {
+                "type": "integer"
+              },
+              "system_category": {
+                "type": "string"
+              },
+              "updated_at": {
+                "type": "string"
+              }
+            },
+            "required": [
+              "id",
+              "name",
+              "order",
+              "is_system_category",
+              "is_disabled",
+              "group"
+            ],
+            "type": "object"
+          },
+          "type": "array"
+        }
+      },
+      "required": [
+        "categories"
+      ],
+      "type": "object"
+    }
+  },
+  {
+    "name": "monarch_financial_overview",
+    "input_schema": {
+      "additionalProperties": false,
+      "dependentRequired": {
+        "end_date": [
+          "start_date"
+        ],
+        "start_date": [
+          "end_date"
+        ]
+      },
+      "properties": {
+        "end_date": {
+          "description": "Inclusive end date; provide with start_date or omit both for the current month. Range cannot exceed ten years.",
+          "pattern": "^[0-9]{4}-(0[1-9]|1[0-2])-(0[1-9]|[12][0-9]|3[01])$",
+          "type": "string"
+        },
+        "start_date": {
+          "description": "Inclusive start date; provide with end_date or omit both for the current month. Range cannot exceed ten years.",
+          "pattern": "^[0-9]{4}-(0[1-9]|1[0-2])-(0[1-9]|[12][0-9]|3[01])$",
+          "type": "string"
+        }
+      },
+      "type": "object"
+    },
+    "output_schema": {
+      "additionalProperties": false,
+      "properties": {
+        "accounts": {
+          "items": {
+            "additionalProperties": false,
+            "properties": {
+              "current_balance": {
+                "type": "string"
+              },
+              "data_provider": {
+                "type": "string"
+              },
+              "deactivated_at": {
+                "type": "string"
+              },
+              "display_balance": {
+                "type": "string"
+              },
+              "display_last_updated_at": {
+                "type": "string"
+              },
+              "display_name": {
+                "type": "string"
+              },
+              "holdings_count": {
+                "type": "integer"
+              },
+              "id": {
+                "type": "string"
+              },
+              "include_balance_in_net_worth": {
+                "type": "boolean"
+              },
+              "include_in_net_worth": {
+                "type": "boolean"
+              },
+              "is_asset": {
+                "type": "boolean"
+              },
+              "is_hidden": {
+                "type": "boolean"
+              },
+              "is_manual": {
+                "type": "boolean"
+              },
+              "limit": {
+                "type": "string"
+              },
+              "logo_url": {
+                "type": "string"
+              },
+              "mask": {
+                "type": "string"
+              },
+              "subtype": {
+                "additionalProperties": false,
+                "properties": {
+                  "display": {
+                    "type": "string"
+                  },
+                  "name": {
+                    "type": "string"
+                  }
+                },
+                "required": [
+                  "name",
+                  "display"
+                ],
+                "type": "object"
+              },
+              "transactions_count": {
+                "type": "integer"
+              },
+              "type": {
+                "additionalProperties": false,
+                "properties": {
+                  "display": {
+                    "type": "string"
+                  },
+                  "name": {
+                    "type": "string"
+                  }
+                },
+                "required": [
+                  "name",
+                  "display"
+                ],
+                "type": "object"
+              },
+              "updated_at": {
+                "type": "string"
+              }
+            },
+            "required": [
+              "id",
+              "display_name",
+              "type",
+              "subtype",
+              "display_balance",
+              "current_balance",
+              "is_hidden",
+              "is_asset",
+              "include_in_net_worth",
+              "include_balance_in_net_worth",
+              "is_manual",
+              "transactions_count",
+              "holdings_count"
+            ],
+            "type": "object"
+          },
+          "type": "array"
+        },
+        "as_of": {
+          "type": "string"
+        },
+        "budget": {
+          "additionalProperties": false,
+          "properties": {
+            "categories": {
+              "items": {
+                "additionalProperties": false,
+                "properties": {
+                  "category": {
+                    "additionalProperties": false,
+                    "properties": {
+                      "id": {
+                        "type": "string"
+                      },
+                      "name": {
+                        "type": "string"
+                      }
+                    },
+                    "required": [
+                      "id",
+                      "name"
+                    ],
+                    "type": "object"
+                  },
+                  "monthly_amounts": {
+                    "items": {
+                      "additionalProperties": false,
+                      "properties": {
+                        "actual_amount": {
+                          "type": "string"
+                        },
+                        "month": {
+                          "type": "string"
+                        },
+                        "planned_cash_flow_amount": {
+                          "type": "string"
+                        },
+                        "planned_set_aside_amount": {
+                          "type": "string"
+                        },
+                        "previous_month_rollover_amount": {
+                          "type": "string"
+                        },
+                        "remaining_amount": {
+                          "type": "string"
+                        },
+                        "rollover_type": {
+                          "type": "string"
+                        }
+                      },
+                      "required": [
+                        "month",
+                        "planned_cash_flow_amount",
+                        "actual_amount",
+                        "remaining_amount"
+                      ],
+                      "type": "object"
+                    },
+                    "type": "array"
+                  }
+                },
+                "required": [
+                  "category",
+                  "monthly_amounts"
+                ],
+                "type": "object"
+              },
+              "type": "array"
+            },
+            "end_month": {
+              "type": "string"
+            },
+            "groups": {
+              "items": {
+                "additionalProperties": false,
+                "properties": {
+                  "category_group": {
+                    "additionalProperties": false,
+                    "properties": {
+                      "id": {
+                        "type": "string"
+                      },
+                      "name": {
+                        "type": "string"
+                      },
+                      "type": {
+                        "type": "string"
+                      }
+                    },
+                    "required": [
+                      "id",
+                      "name",
+                      "type"
+                    ],
+                    "type": "object"
+                  },
+                  "monthly_amounts": {
+                    "items": {
+                      "additionalProperties": false,
+                      "properties": {
+                        "actual_amount": {
+                          "type": "string"
+                        },
+                        "month": {
+                          "type": "string"
+                        },
+                        "planned_cash_flow_amount": {
+                          "type": "string"
+                        },
+                        "planned_set_aside_amount": {
+                          "type": "string"
+                        },
+                        "previous_month_rollover_amount": {
+                          "type": "string"
+                        },
+                        "remaining_amount": {
+                          "type": "string"
+                        },
+                        "rollover_type": {
+                          "type": "string"
+                        }
+                      },
+                      "required": [
+                        "month",
+                        "planned_cash_flow_amount",
+                        "actual_amount",
+                        "remaining_amount"
+                      ],
+                      "type": "object"
+                    },
+                    "type": "array"
+                  }
+                },
+                "required": [
+                  "category_group",
+                  "monthly_amounts"
+                ],
+                "type": "object"
+              },
+              "type": "array"
+            },
+            "start_month": {
+              "type": "string"
+            }
+          },
+          "required": [
+            "start_month",
+            "end_month",
+            "categories",
+            "groups"
+          ],
+          "type": "object"
+        },
+        "cashflow": {
+          "additionalProperties": false,
+          "properties": {
+            "end_date": {
+              "type": "string"
+            },
+            "savings": {
+              "type": "string"
+            },
+            "savings_rate": {
+              "type": "string"
+            },
+            "start_date": {
+              "type": "string"
+            },
+            "sum_expense": {
+              "type": "string"
+            },
+            "sum_income": {
+              "type": "string"
+            }
+          },
+          "required": [
+            "start_date",
+            "end_date",
+            "sum_income",
+            "sum_expense",
+            "savings",
+            "savings_rate"
+          ],
+          "type": "object"
+        },
+        "net_worth": {
+          "type": "string"
+        },
+        "transactions": {
+          "items": {
+            "additionalProperties": false,
+            "properties": {
+              "account": {
+                "additionalProperties": false,
+                "properties": {
+                  "display_name": {
+                    "type": "string"
+                  },
+                  "id": {
+                    "type": "string"
+                  }
+                },
+                "required": [
+                  "id",
+                  "display_name"
+                ],
+                "type": "object"
+              },
+              "amount": {
+                "type": "string"
+              },
+              "attachments": {
+                "items": {
+                  "additionalProperties": false,
+                  "properties": {
+                    "extension": {
+                      "type": "string"
+                    },
+                    "filename": {
+                      "type": "string"
+                    },
+                    "id": {
+                      "type": "string"
+                    },
+                    "original_asset_url": {
+                      "type": "string"
+                    },
+                    "size_bytes": {
+                      "type": "integer"
+                    }
+                  },
+                  "required": [
+                    "id",
+                    "size_bytes"
+                  ],
+                  "type": "object"
+                },
+                "type": "array"
+              },
+              "category": {
+                "additionalProperties": false,
+                "properties": {
+                  "created_at": {
+                    "type": "string"
+                  },
+                  "group": {
+                    "additionalProperties": false,
+                    "properties": {
+                      "id": {
+                        "type": "string"
+                      },
+                      "name": {
+                        "type": "string"
+                      },
+                      "type": {
+                        "type": "string"
+                      }
+                    },
+                    "required": [
+                      "id",
+                      "name",
+                      "type"
+                    ],
+                    "type": "object"
+                  },
+                  "icon": {
+                    "type": "string"
+                  },
+                  "id": {
+                    "type": "string"
+                  },
+                  "is_disabled": {
+                    "type": "boolean"
+                  },
+                  "is_system_category": {
+                    "type": "boolean"
+                  },
+                  "name": {
+                    "type": "string"
+                  },
+                  "order": {
+                    "type": "integer"
+                  },
+                  "system_category": {
+                    "type": "string"
+                  },
+                  "updated_at": {
+                    "type": "string"
+                  }
+                },
+                "required": [
+                  "id",
+                  "name",
+                  "order",
+                  "is_system_category",
+                  "is_disabled",
+                  "group"
+                ],
+                "type": [
+                  "null",
+                  "object"
+                ]
+              },
+              "created_at": {
+                "type": "string"
+              },
+              "data_provider_description": {
+                "type": "string"
+              },
+              "date": {
+                "type": "string"
+              },
+              "goal": {
+                "additionalProperties": false,
+                "properties": {
+                  "id": {
+                    "type": "string"
+                  },
+                  "name": {
+                    "type": "string"
+                  }
+                },
+                "required": [
+                  "id",
+                  "name"
+                ],
+                "type": [
+                  "null",
+                  "object"
+                ]
+              },
+              "has_split_transactions": {
+                "type": "boolean"
+              },
+              "hide_from_reports": {
+                "type": "boolean"
+              },
+              "id": {
+                "type": "string"
+              },
+              "is_recurring": {
+                "type": "boolean"
+              },
+              "is_split_transaction": {
+                "type": "boolean"
+              },
+              "merchant": {
+                "additionalProperties": false,
+                "properties": {
+                  "id": {
+                    "type": "string"
+                  },
+                  "name": {
+                    "type": "string"
+                  },
+                  "transactions_count": {
+                    "type": "integer"
+                  }
+                },
+                "required": [
+                  "id",
+                  "name",
+                  "transactions_count"
+                ],
+                "type": [
+                  "null",
+                  "object"
+                ]
+              },
+              "needs_review": {
+                "type": "boolean"
+              },
+              "notes": {
+                "type": "string"
+              },
+              "pending": {
+                "type": "boolean"
+              },
+              "plaid_name": {
+                "type": "string"
+              },
+              "review_status": {
+                "type": "string"
+              },
+              "split_transactions": {
+                "items": {
+                  "additionalProperties": false,
+                  "properties": {
+                    "amount": {
+                      "type": "string"
+                    },
+                    "category": {
+                      "additionalProperties": false,
+                      "properties": {
+                        "created_at": {
+                          "type": "string"
+                        },
+                        "group": {
+                          "additionalProperties": false,
+                          "properties": {
+                            "id": {
+                              "type": "string"
+                            },
+                            "name": {
+                              "type": "string"
+                            },
+                            "type": {
+                              "type": "string"
+                            }
+                          },
+                          "required": [
+                            "id",
+                            "name",
+                            "type"
+                          ],
+                          "type": "object"
+                        },
+                        "icon": {
+                          "type": "string"
+                        },
+                        "id": {
+                          "type": "string"
+                        },
+                        "is_disabled": {
+                          "type": "boolean"
+                        },
+                        "is_system_category": {
+                          "type": "boolean"
+                        },
+                        "name": {
+                          "type": "string"
+                        },
+                        "order": {
+                          "type": "integer"
+                        },
+                        "system_category": {
+                          "type": "string"
+                        },
+                        "updated_at": {
+                          "type": "string"
+                        }
+                      },
+                      "required": [
+                        "id",
+                        "name",
+                        "order",
+                        "is_system_category",
+                        "is_disabled",
+                        "group"
+                      ],
+                      "type": [
+                        "null",
+                        "object"
+                      ]
+                    },
+                    "id": {
+                      "type": "string"
+                    },
+                    "merchant": {
+                      "additionalProperties": false,
+                      "properties": {
+                        "id": {
+                          "type": "string"
+                        },
+                        "name": {
+                          "type": "string"
+                        },
+                        "transactions_count": {
+                          "type": "integer"
+                        }
+                      },
+                      "required": [
+                        "id",
+                        "name",
+                        "transactions_count"
+                      ],
+                      "type": [
+                        "null",
+                        "object"
+                      ]
+                    },
+                    "notes": {
+                      "type": "string"
+                    }
+                  },
+                  "required": [
+                    "id",
+                    "amount",
+                    "category",
+                    "merchant"
+                  ],
+                  "type": "object"
+                },
+                "type": "array"
+              },
+              "tags": {
+                "items": {
+                  "additionalProperties": false,
+                  "properties": {
+                    "color": {
+                      "type": "string"
+                    },
+                    "id": {
+                      "type": "string"
+                    },
+                    "name": {
+                      "type": "string"
+                    },
+                    "order": {
+                      "type": "integer"
+                    }
+                  },
+                  "required": [
+                    "id",
+                    "name",
+                    "order"
+                  ],
+                  "type": "object"
+                },
+                "type": "array"
+              },
+              "updated_at": {
+                "type": "string"
+              }
+            },
+            "required": [
+              "id",
+              "amount",
+              "pending",
+              "date",
+              "hide_from_reports",
+              "is_recurring",
+              "needs_review",
+              "has_split_transactions",
+              "is_split_transaction",
+              "category",
+              "merchant",
+              "account"
+            ],
+            "type": "object"
+          },
+          "type": "array"
+        }
+      },
+      "required": [
+        "as_of",
+        "net_worth",
+        "accounts",
+        "cashflow",
+        "budget",
+        "transactions"
+      ],
+      "type": "object"
+    }
+  },
+  {
+    "name": "monarch_transaction_get",
+    "input_schema": {
+      "additionalProperties": false,
+      "properties": {
+        "id": {
+          "description": "Monarch transaction ID.",
+          "maxLength": 200,
+          "minLength": 1,
+          "type": "string"
+        }
+      },
+      "required": [
+        "id"
+      ],
+      "type": "object"
+    },
+    "output_schema": {
+      "additionalProperties": false,
+      "properties": {
+        "transaction": {
+          "additionalProperties": false,
+          "properties": {
+            "account": {
+              "additionalProperties": false,
+              "properties": {
+                "display_name": {
+                  "type": "string"
+                },
+                "id": {
+                  "type": "string"
+                }
+              },
+              "required": [
+                "id",
+                "display_name"
+              ],
+              "type": "object"
+            },
+            "amount": {
+              "type": "string"
+            },
+            "attachments": {
+              "items": {
+                "additionalProperties": false,
+                "properties": {
+                  "extension": {
+                    "type": "string"
+                  },
+                  "filename": {
+                    "type": "string"
+                  },
+                  "id": {
+                    "type": "string"
+                  },
+                  "original_asset_url": {
+                    "type": "string"
+                  },
+                  "size_bytes": {
+                    "type": "integer"
+                  }
+                },
+                "required": [
+                  "id",
+                  "size_bytes"
+                ],
+                "type": "object"
+              },
+              "type": "array"
+            },
+            "category": {
+              "additionalProperties": false,
+              "properties": {
+                "created_at": {
+                  "type": "string"
+                },
+                "group": {
+                  "additionalProperties": false,
+                  "properties": {
+                    "id": {
+                      "type": "string"
+                    },
+                    "name": {
+                      "type": "string"
+                    },
+                    "type": {
+                      "type": "string"
+                    }
+                  },
+                  "required": [
+                    "id",
+                    "name",
+                    "type"
+                  ],
+                  "type": "object"
+                },
+                "icon": {
+                  "type": "string"
+                },
+                "id": {
+                  "type": "string"
+                },
+                "is_disabled": {
+                  "type": "boolean"
+                },
+                "is_system_category": {
+                  "type": "boolean"
+                },
+                "name": {
+                  "type": "string"
+                },
+                "order": {
+                  "type": "integer"
+                },
+                "system_category": {
+                  "type": "string"
+                },
+                "updated_at": {
+                  "type": "string"
+                }
+              },
+              "required": [
+                "id",
+                "name",
+                "order",
+                "is_system_category",
+                "is_disabled",
+                "group"
+              ],
+              "type": [
+                "null",
+                "object"
+              ]
+            },
+            "created_at": {
+              "type": "string"
+            },
+            "data_provider_description": {
+              "type": "string"
+            },
+            "date": {
+              "type": "string"
+            },
+            "goal": {
+              "additionalProperties": false,
+              "properties": {
+                "id": {
+                  "type": "string"
+                },
+                "name": {
+                  "type": "string"
+                }
+              },
+              "required": [
+                "id",
+                "name"
+              ],
+              "type": [
+                "null",
+                "object"
+              ]
+            },
+            "has_split_transactions": {
+              "type": "boolean"
+            },
+            "hide_from_reports": {
+              "type": "boolean"
+            },
+            "id": {
+              "type": "string"
+            },
+            "is_recurring": {
+              "type": "boolean"
+            },
+            "is_split_transaction": {
+              "type": "boolean"
+            },
+            "merchant": {
+              "additionalProperties": false,
+              "properties": {
+                "id": {
+                  "type": "string"
+                },
+                "name": {
+                  "type": "string"
+                },
+                "transactions_count": {
+                  "type": "integer"
+                }
+              },
+              "required": [
+                "id",
+                "name",
+                "transactions_count"
+              ],
+              "type": [
+                "null",
+                "object"
+              ]
+            },
+            "needs_review": {
+              "type": "boolean"
+            },
+            "notes": {
+              "type": "string"
+            },
+            "pending": {
+              "type": "boolean"
+            },
+            "plaid_name": {
+              "type": "string"
+            },
+            "review_status": {
+              "type": "string"
+            },
+            "split_transactions": {
+              "items": {
+                "additionalProperties": false,
+                "properties": {
+                  "amount": {
+                    "type": "string"
+                  },
+                  "category": {
+                    "additionalProperties": false,
+                    "properties": {
+                      "created_at": {
+                        "type": "string"
+                      },
+                      "group": {
+                        "additionalProperties": false,
+                        "properties": {
+                          "id": {
+                            "type": "string"
+                          },
+                          "name": {
+                            "type": "string"
+                          },
+                          "type": {
+                            "type": "string"
+                          }
+                        },
+                        "required": [
+                          "id",
+                          "name",
+                          "type"
+                        ],
+                        "type": "object"
+                      },
+                      "icon": {
+                        "type": "string"
+                      },
+                      "id": {
+                        "type": "string"
+                      },
+                      "is_disabled": {
+                        "type": "boolean"
+                      },
+                      "is_system_category": {
+                        "type": "boolean"
+                      },
+                      "name": {
+                        "type": "string"
+                      },
+                      "order": {
+                        "type": "integer"
+                      },
+                      "system_category": {
+                        "type": "string"
+                      },
+                      "updated_at": {
+                        "type": "string"
+                      }
+                    },
+                    "required": [
+                      "id",
+                      "name",
+                      "order",
+                      "is_system_category",
+                      "is_disabled",
+                      "group"
+                    ],
+                    "type": [
+                      "null",
+                      "object"
+                    ]
+                  },
+                  "id": {
+                    "type": "string"
+                  },
+                  "merchant": {
+                    "additionalProperties": false,
+                    "properties": {
+                      "id": {
+                        "type": "string"
+                      },
+                      "name": {
+                        "type": "string"
+                      },
+                      "transactions_count": {
+                        "type": "integer"
+                      }
+                    },
+                    "required": [
+                      "id",
+                      "name",
+                      "transactions_count"
+                    ],
+                    "type": [
+                      "null",
+                      "object"
+                    ]
+                  },
+                  "notes": {
+                    "type": "string"
+                  }
+                },
+                "required": [
+                  "id",
+                  "amount",
+                  "category",
+                  "merchant"
+                ],
+                "type": "object"
+              },
+              "type": "array"
+            },
+            "tags": {
+              "items": {
+                "additionalProperties": false,
+                "properties": {
+                  "color": {
+                    "type": "string"
+                  },
+                  "id": {
+                    "type": "string"
+                  },
+                  "name": {
+                    "type": "string"
+                  },
+                  "order": {
+                    "type": "integer"
+                  }
+                },
+                "required": [
+                  "id",
+                  "name",
+                  "order"
+                ],
+                "type": "object"
+              },
+              "type": "array"
+            },
+            "updated_at": {
+              "type": "string"
+            }
+          },
+          "required": [
+            "id",
+            "amount",
+            "pending",
+            "date",
+            "hide_from_reports",
+            "is_recurring",
+            "needs_review",
+            "has_split_transactions",
+            "is_split_transaction",
+            "category",
+            "merchant",
+            "account"
+          ],
+          "type": "object"
+        }
+      },
+      "required": [
+        "transaction"
+      ],
+      "type": "object"
+    }
+  },
+  {
+    "name": "monarch_transactions_list",
+    "input_schema": {
+      "additionalProperties": false,
+      "dependentRequired": {
+        "end_date": [
+          "start_date"
+        ],
+        "start_date": [
+          "end_date"
+        ]
+      },
+      "properties": {
+        "account_ids": {
+          "description": "Optional account IDs.",
+          "items": {
+            "maxLength": 200,
+            "minLength": 1,
+            "type": "string"
+          },
+          "maxItems": 50,
+          "type": "array",
+          "uniqueItems": true
+        },
+        "category_ids": {
+          "description": "Optional category IDs.",
+          "items": {
+            "maxLength": 200,
+            "minLength": 1,
+            "type": "string"
+          },
+          "maxItems": 50,
+          "type": "array",
+          "uniqueItems": true
+        },
+        "cursor": {
+          "description": "Opaque next_cursor returned by an earlier call.",
+          "maxLength": 256,
+          "type": "string"
+        },
+        "end_date": {
+          "description": "Inclusive end date; provide with start_date. Range cannot exceed ten years.",
+          "pattern": "^[0-9]{4}-(0[1-9]|1[0-2])-(0[1-9]|[12][0-9]|3[01])$",
+          "type": "string"
+        },
+        "limit": {
+          "default": 25,
+          "description": "Page size; defaults to 25.",
+          "maximum": 100,
+          "minimum": 1,
+          "type": "integer"
+        },
+        "search": {
+          "description": "Optional merchant or description search.",
+          "maxLength": 200,
+          "type": "string"
+        },
+        "start_date": {
+          "description": "Inclusive start date; provide with end_date. Range cannot exceed ten years.",
+          "pattern": "^[0-9]{4}-(0[1-9]|1[0-2])-(0[1-9]|[12][0-9]|3[01])$",
+          "type": "string"
+        },
+        "tag_ids": {
+          "description": "Optional tag IDs.",
+          "items": {
+            "maxLength": 200,
+            "minLength": 1,
+            "type": "string"
+          },
+          "maxItems": 50,
+          "type": "array",
+          "uniqueItems": true
+        }
+      },
+      "type": "object"
+    },
+    "output_schema": {
+      "additionalProperties": false,
+      "properties": {
+        "next_cursor": {
+          "type": "string"
+        },
+        "total_count": {
+          "type": "integer"
+        },
+        "transactions": {
+          "items": {
+            "additionalProperties": false,
+            "properties": {
+              "account": {
+                "additionalProperties": false,
+                "properties": {
+                  "display_name": {
+                    "type": "string"
+                  },
+                  "id": {
+                    "type": "string"
+                  }
+                },
+                "required": [
+                  "id",
+                  "display_name"
+                ],
+                "type": "object"
+              },
+              "amount": {
+                "type": "string"
+              },
+              "attachments": {
+                "items": {
+                  "additionalProperties": false,
+                  "properties": {
+                    "extension": {
+                      "type": "string"
+                    },
+                    "filename": {
+                      "type": "string"
+                    },
+                    "id": {
+                      "type": "string"
+                    },
+                    "original_asset_url": {
+                      "type": "string"
+                    },
+                    "size_bytes": {
+                      "type": "integer"
+                    }
+                  },
+                  "required": [
+                    "id",
+                    "size_bytes"
+                  ],
+                  "type": "object"
+                },
+                "type": "array"
+              },
+              "category": {
+                "additionalProperties": false,
+                "properties": {
+                  "created_at": {
+                    "type": "string"
+                  },
+                  "group": {
+                    "additionalProperties": false,
+                    "properties": {
+                      "id": {
+                        "type": "string"
+                      },
+                      "name": {
+                        "type": "string"
+                      },
+                      "type": {
+                        "type": "string"
+                      }
+                    },
+                    "required": [
+                      "id",
+                      "name",
+                      "type"
+                    ],
+                    "type": "object"
+                  },
+                  "icon": {
+                    "type": "string"
+                  },
+                  "id": {
+                    "type": "string"
+                  },
+                  "is_disabled": {
+                    "type": "boolean"
+                  },
+                  "is_system_category": {
+                    "type": "boolean"
+                  },
+                  "name": {
+                    "type": "string"
+                  },
+                  "order": {
+                    "type": "integer"
+                  },
+                  "system_category": {
+                    "type": "string"
+                  },
+                  "updated_at": {
+                    "type": "string"
+                  }
+                },
+                "required": [
+                  "id",
+                  "name",
+                  "order",
+                  "is_system_category",
+                  "is_disabled",
+                  "group"
+                ],
+                "type": [
+                  "null",
+                  "object"
+                ]
+              },
+              "created_at": {
+                "type": "string"
+              },
+              "data_provider_description": {
+                "type": "string"
+              },
+              "date": {
+                "type": "string"
+              },
+              "goal": {
+                "additionalProperties": false,
+                "properties": {
+                  "id": {
+                    "type": "string"
+                  },
+                  "name": {
+                    "type": "string"
+                  }
+                },
+                "required": [
+                  "id",
+                  "name"
+                ],
+                "type": [
+                  "null",
+                  "object"
+                ]
+              },
+              "has_split_transactions": {
+                "type": "boolean"
+              },
+              "hide_from_reports": {
+                "type": "boolean"
+              },
+              "id": {
+                "type": "string"
+              },
+              "is_recurring": {
+                "type": "boolean"
+              },
+              "is_split_transaction": {
+                "type": "boolean"
+              },
+              "merchant": {
+                "additionalProperties": false,
+                "properties": {
+                  "id": {
+                    "type": "string"
+                  },
+                  "name": {
+                    "type": "string"
+                  },
+                  "transactions_count": {
+                    "type": "integer"
+                  }
+                },
+                "required": [
+                  "id",
+                  "name",
+                  "transactions_count"
+                ],
+                "type": [
+                  "null",
+                  "object"
+                ]
+              },
+              "needs_review": {
+                "type": "boolean"
+              },
+              "notes": {
+                "type": "string"
+              },
+              "pending": {
+                "type": "boolean"
+              },
+              "plaid_name": {
+                "type": "string"
+              },
+              "review_status": {
+                "type": "string"
+              },
+              "split_transactions": {
+                "items": {
+                  "additionalProperties": false,
+                  "properties": {
+                    "amount": {
+                      "type": "string"
+                    },
+                    "category": {
+                      "additionalProperties": false,
+                      "properties": {
+                        "created_at": {
+                          "type": "string"
+                        },
+                        "group": {
+                          "additionalProperties": false,
+                          "properties": {
+                            "id": {
+                              "type": "string"
+                            },
+                            "name": {
+                              "type": "string"
+                            },
+                            "type": {
+                              "type": "string"
+                            }
+                          },
+                          "required": [
+                            "id",
+                            "name",
+                            "type"
+                          ],
+                          "type": "object"
+                        },
+                        "icon": {
+                          "type": "string"
+                        },
+                        "id": {
+                          "type": "string"
+                        },
+                        "is_disabled": {
+                          "type": "boolean"
+                        },
+                        "is_system_category": {
+                          "type": "boolean"
+                        },
+                        "name": {
+                          "type": "string"
+                        },
+                        "order": {
+                          "type": "integer"
+                        },
+                        "system_category": {
+                          "type": "string"
+                        },
+                        "updated_at": {
+                          "type": "string"
+                        }
+                      },
+                      "required": [
+                        "id",
+                        "name",
+                        "order",
+                        "is_system_category",
+                        "is_disabled",
+                        "group"
+                      ],
+                      "type": [
+                        "null",
+                        "object"
+                      ]
+                    },
+                    "id": {
+                      "type": "string"
+                    },
+                    "merchant": {
+                      "additionalProperties": false,
+                      "properties": {
+                        "id": {
+                          "type": "string"
+                        },
+                        "name": {
+                          "type": "string"
+                        },
+                        "transactions_count": {
+                          "type": "integer"
+                        }
+                      },
+                      "required": [
+                        "id",
+                        "name",
+                        "transactions_count"
+                      ],
+                      "type": [
+                        "null",
+                        "object"
+                      ]
+                    },
+                    "notes": {
+                      "type": "string"
+                    }
+                  },
+                  "required": [
+                    "id",
+                    "amount",
+                    "category",
+                    "merchant"
+                  ],
+                  "type": "object"
+                },
+                "type": "array"
+              },
+              "tags": {
+                "items": {
+                  "additionalProperties": false,
+                  "properties": {
+                    "color": {
+                      "type": "string"
+                    },
+                    "id": {
+                      "type": "string"
+                    },
+                    "name": {
+                      "type": "string"
+                    },
+                    "order": {
+                      "type": "integer"
+                    }
+                  },
+                  "required": [
+                    "id",
+                    "name",
+                    "order"
+                  ],
+                  "type": "object"
+                },
+                "type": "array"
+              },
+              "updated_at": {
+                "type": "string"
+              }
+            },
+            "required": [
+              "id",
+              "amount",
+              "pending",
+              "date",
+              "hide_from_reports",
+              "is_recurring",
+              "needs_review",
+              "has_split_transactions",
+              "is_split_transaction",
+              "category",
+              "merchant",
+              "account"
+            ],
+            "type": "object"
+          },
+          "type": "array"
+        }
+      },
+      "required": [
+        "transactions",
+        "total_count"
+      ],
+      "type": "object"
+    }
+  }
+]

@@ -1,0 +1,10 @@
+query GetCashflowSummary($filters: TransactionFilterInput) {
+  aggregates(filters: $filters, fillEmptyValues: true) {
+    summary {
+      sum_income: sumIncome
+      sum_expense: sumExpense
+      savings
+      savings_rate: savingsRate
+    }
+  }
+}

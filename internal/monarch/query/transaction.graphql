@@ -1,0 +1,54 @@
+query GetTransaction($id: UUID!) {
+  getTransaction(id: $id) {
+    id
+    amount
+    pending
+    date
+    hide_from_reports: hideFromReports
+    data_provider_description: dataProviderDescription
+    plaid_name: plaidName
+    notes
+    is_recurring: isRecurring
+    review_status: reviewStatus
+    needs_review: needsReview
+    has_split_transactions: hasSplitTransactions
+    is_split_transaction: isSplitTransaction
+    created_at: createdAt
+    updated_at: updatedAt
+    attachments { id extension filename original_asset_url: originalAssetUrl size_bytes: sizeBytes }
+    category {
+      id
+      name
+      order
+      icon
+      system_category: systemCategory
+      is_system_category: isSystemCategory
+      is_disabled: isDisabled
+      updated_at: updatedAt
+      created_at: createdAt
+      group { id name type }
+    }
+    merchant { id name transactions_count: transactionCount }
+    account { id display_name: displayName }
+    goal { id name }
+    tags { id name color order }
+    split_transactions: splitTransactions {
+      id
+      amount
+      notes
+      category {
+        id
+        name
+        order
+        icon
+        system_category: systemCategory
+        is_system_category: isSystemCategory
+        is_disabled: isDisabled
+        updated_at: updatedAt
+        created_at: createdAt
+        group { id name type }
+      }
+      merchant { id name transactions_count: transactionCount }
+    }
+  }
+}

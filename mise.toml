@@ -1,0 +1,117 @@
+[tools]
+go = "1.25.12"
+
+[tasks.build]
+alias = "b"
+description = "Build the monarch CLI"
+env.CGO_ENABLED = "0"
+run = [
+  "mkdir -p bin",
+  "go build -trimpath -o bin/monarch ./cmd/monarch",
+]
+run_windows = [
+  "if not exist bin mkdir bin",
+  "go build -trimpath -o bin\\monarch.exe ./cmd/monarch",
+]
+
+[tasks.install]
+description = "Build and install monarch for the current user"
+depends = ["build"]
+run = '''
+install_dir="${MONARCH_INSTALL_DIR:-$HOME/.local/bin}"
+mkdir -p "$install_dir"
+install -m 0755 bin/monarch "$install_dir/monarch"
+printf 'Installed %s\n' "$install_dir/monarch"
+'''
+run_windows = '''powershell -NoProfile -Command "$dir = if ($env:MONARCH_INSTALL_DIR) { $env:MONARCH_INSTALL_DIR } else { Join-Path $env:LOCALAPPDATA 'monarch-cli\\bin' }; New-Item -ItemType Directory -Force -Path $dir | Out-Null; Copy-Item -Force bin\\monarch.exe (Join-Path $dir 'monarch.exe'); Write-Output ('Installed ' + (Join-Path $dir 'monarch.exe'))"'''
+
+[tasks.fmt]
+description = "Format Go source"
+run = "gofmt -w ./cmd ./internal"
+
+[tasks."fmt:check"]
+description = "Check Go source formatting"
+run = '''
+unformatted="$(gofmt -l ./cmd ./internal)"
+if [ -n "$unformatted" ]; then
+  printf 'These files need gofmt:\n%s\n' "$unformatted"
+  exit 1
+fi
+'''
+run_windows = '''powershell -NoProfile -Command "$files = @(gofmt -l ./cmd ./internal); if ($files.Count -gt 0) { Write-Output 'These files need gofmt:'; Write-Output $files; exit 1 }"'''
+
+[tasks.test]
+alias = "t"
+description = "Run the unit and integration tests"
+run = "go test ./..."
+
+[tasks."test:shuffle"]
+description = "Run tests repeatedly in randomized order"
+run = "go test -shuffle=on -count=3 ./..."
+
+[tasks."test:race"]
+description = "Run tests with the race detector"
+run = "go test -race ./..."
+
+[tasks."test:coverage"]
+description = "Enforce the repository's 65% statement coverage floor"
+run = '''
+go test -coverprofile=coverage.out ./...
+coverage_total="$(go tool cover -func=coverage.out | awk '/^total:/ { gsub(/%/, "", $3); print $3 }')"
+awk -v coverage_total="$coverage_total" 'BEGIN { if (coverage_total + 0 < 65) { printf "coverage %.1f%% is below 65%%\n", coverage_total; exit 1 } }'
+'''
+run_windows = '''powershell -NoProfile -Command "go test -coverprofile=coverage.out ./...; if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }; $line = (go tool cover -func=coverage.out | Select-String '^total:').Line; $coverageTotal = [double](($line -split '\s+')[-1].TrimEnd('%')); if ($coverageTotal -lt 65) { Write-Error ('coverage {0:N1}% is below 65%' -f $coverageTotal); exit 1 }"'''
+
+[tasks."mod:check"]
+description = "Verify checksums and that go.mod/go.sum are tidy"
+run = [
+  "go mod verify",
+  "go mod tidy -diff",
+]
+
+[tasks.vet]
+description = "Run Go static analysis"
+run = "go vet ./..."
+
+[tasks.staticcheck]
+description = "Run pinned Staticcheck analysis"
+run = "go tool staticcheck ./..."
+
+[tasks.vuln]
+description = "Scan reachable code with pinned govulncheck"
+run = "go tool govulncheck ./..."
+
+[tasks.check]
+description = "Run portable formatting, module, test, analysis, and build checks"
+depends = ["fmt:check", "mod:check", "test", "vet", "staticcheck", "build"]
+
+[tasks.audit]
+description = "Run the full local quality and vulnerability gate"
+depends = ["check", "test:shuffle", "test:race", "test:coverage", "vuln"]
+
+[tasks."test:live"]
+description = "Run the opt-in live MCP smoke test"
+depends = ["build"]
+env.MONARCH_LIVE_BINARY = "{{config_root}}/bin/monarch"
+run = [
+  '''test -x "$MONARCH_LIVE_BINARY"''',
+  "go test ./internal/mcpserver -run TestLiveStdioServer -v -count=1",
+]
+run_windows = '''if exist "%MISE_PROJECT_ROOT%\bin\monarch.exe" (set "MONARCH_LIVE_BINARY=%MISE_PROJECT_ROOT%\bin\monarch.exe" && go test ./internal/mcpserver -run TestLiveStdioServer -v -count=1) else (exit /b 1)'''
+
+[tasks."release:check"]
+description = "Validate the GoReleaser configuration"
+tools.goreleaser = "2.17.0"
+run = "goreleaser check"
+
+[tasks."release:snapshot"]
+description = "Build release artifacts without publishing"
+depends = ["check", "release:check"]
+tools.goreleaser = "2.17.0"
+run = "goreleaser release --snapshot --clean"
+
+[tasks."release:publish"]
+description = "Publish a tagged GitHub release"
+depends = ["audit", "release:check"]
+tools.goreleaser = "2.17.0"
+run = "goreleaser release --clean"

@@ -1,0 +1,27 @@
+query GetJointPlanningData($startDate: Date!, $endDate: Date!) {
+  budgetData(startMonth: $startDate, endMonth: $endDate) {
+    monthly_amounts_by_category: monthlyAmountsByCategory {
+      category { id name }
+      monthly_amounts: monthlyAmounts {
+        month
+        planned_cash_flow_amount: plannedCashFlowAmount
+        planned_set_aside_amount: plannedSetAsideAmount
+        actual_amount: actualAmount
+        remaining_amount: remainingAmount
+        previous_month_rollover_amount: previousMonthRolloverAmount
+        rollover_type: rolloverType
+      }
+    }
+    monthly_amounts_by_category_group: monthlyAmountsByCategoryGroup {
+      category_group: categoryGroup { id name type }
+      monthly_amounts: monthlyAmounts {
+        month
+        planned_cash_flow_amount: plannedCashFlowAmount
+        actual_amount: actualAmount
+        remaining_amount: remainingAmount
+        previous_month_rollover_amount: previousMonthRolloverAmount
+        rollover_type: rolloverType
+      }
+    }
+  }
+}

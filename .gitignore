@@ -1,0 +1,14 @@
+# Build and release output.
+/bin/
+/dist/
+/monarch
+/monarch.exe
+
+# Test output.
+*.test
+coverage.out
+
+# Local development files.
+.DS_Store
+mise.local.toml
+mise.*.local.toml

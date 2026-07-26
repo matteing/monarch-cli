@@ -1,0 +1,14 @@
+query GetCategories {
+  categories {
+    id
+    name
+    order
+    icon
+    system_category: systemCategory
+    is_system_category: isSystemCategory
+    is_disabled: isDisabled
+    updated_at: updatedAt
+    created_at: createdAt
+    group { id name type }
+  }
+}

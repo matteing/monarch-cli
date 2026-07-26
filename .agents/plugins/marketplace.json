@@ -1,0 +1,20 @@
+{
+  "name": "monarch-cli",
+  "interface": {
+    "displayName": "Monarch CLI"
+  },
+  "plugins": [
+    {
+      "name": "monarch-cli",
+      "source": {
+        "source": "local",
+        "path": "./plugins/monarch-cli"
+      },
+      "policy": {
+        "installation": "AVAILABLE",
+        "authentication": "ON_INSTALL"
+      },
+      "category": "Productivity"
+    }
+  ]
+}

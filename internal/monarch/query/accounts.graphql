@@ -1,0 +1,24 @@
+query GetAccounts {
+  accounts {
+    id
+    display_name: displayName
+    type { name display }
+    subtype { name display }
+    display_balance: displayBalance
+    current_balance: currentBalance
+    limit
+    updated_at: updatedAt
+    display_last_updated_at: displayLastUpdatedAt
+    deactivated_at: deactivatedAt
+    is_hidden: isHidden
+    is_asset: isAsset
+    mask
+    include_in_net_worth: includeInNetWorth
+    include_balance_in_net_worth: includeBalanceInNetWorth
+    data_provider: dataProvider
+    is_manual: isManual
+    transactions_count: transactionsCount
+    holdings_count: holdingsCount
+    logo_url: logoUrl
+  }
+}
