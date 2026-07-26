@@ -1,6 +1,7 @@
+<h1 align="center">monarch-cli</h1>
+
 <p align="center">
-<h2>Monarch CLI</h2>
-✨ A joyful CLI and MCP server for Monarch Money.
+  <strong>A joyful CLI and MCP for Monarch Money</strong>
 </p>
 
 > [!IMPORTANT]
