@@ -1,9 +1,9 @@
 # Monarch CLI
 
-This is an unofficial, read-only Monarch Money CLI. It also exposes all its functionality through an MCP server.
+A ✨ joyful CLI and MCP server for Monarch Money.
 
 > [!IMPORTANT]
-> I built this for myself! This project uses Monarch's private API, so it may break occasionally. It is not affiliated with or endorsed by Monarch.
+> I built this for myself! It is not affiliated with or endorsed by Monarch.
 
 ## Why?
 
