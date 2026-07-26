@@ -1,7 +1,7 @@
 <h1 align="center">monarch-cli</h1>
 
 <p align="center">
-  <strong>A joyful CLI and MCP for Monarch Money</strong>
+  <strong>💖 A joyful CLI and MCP for Monarch Money 🌟</strong>
 </p>
 
 > [!IMPORTANT]
