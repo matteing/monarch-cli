@@ -8,7 +8,6 @@ import (
 	tea "charm.land/bubbletea/v2"
 	"charm.land/lipgloss/v2"
 
-	"github.com/matteing/monarch-cli/internal/auth"
 	"github.com/matteing/monarch-cli/internal/textsafe"
 )
 
@@ -19,13 +18,7 @@ func (m loginModel) View() tea.View {
 		gap = "\n"
 	}
 
-	if m.opts.Method == auth.MethodBrowserSession {
-		body.WriteString(mutedStyle.Render("Copy the Cookie request header from a signed-in app.monarch.com tab."))
-		body.WriteString("\n")
-		body.WriteString(mutedStyle.Render(BrowserPrivacyNotice))
-	} else {
-		body.WriteString(mutedStyle.Render(PasswordPrivacyNotice))
-	}
+	body.WriteString(mutedStyle.Render(PasswordPrivacyNotice))
 	body.WriteString(gap)
 
 	if m.stage == stageWorking || m.stage == stageSaving {

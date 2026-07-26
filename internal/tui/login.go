@@ -8,7 +8,6 @@ import (
 
 	tea "charm.land/bubbletea/v2"
 
-	"github.com/matteing/monarch-cli/internal/auth"
 	"github.com/matteing/monarch-cli/internal/session"
 )
 
@@ -21,9 +20,6 @@ var ErrCanceled = fmt.Errorf("login canceled: %w", context.Canceled)
 // direct: the login secret is used for the request but never persisted.
 const PasswordPrivacyNotice = "Your password and MFA code aren't stored anywhere. They're discarded after login; we only keep the session token."
 
-// BrowserPrivacyNotice explains the distinct storage behavior of cookie import.
-const BrowserPrivacyNotice = "No email or password is used. Only the required session_id and csrftoken cookies are stored."
-
 // LoginOptions supplies the required dependencies for the interactive login
 // form. Network callbacks must honor Context. Save begins only after successful
 // verification; once that credential-vault commit starts, UI cancellation is
@@ -32,10 +28,8 @@ type LoginOptions struct {
 	Context      context.Context
 	Input        io.Reader
 	Output       io.Writer
-	Method       auth.Method
 	Profile      string
 	Authenticate func(context.Context, string, string, string) (session.Session, error)
-	ParseCookies func(string) (session.Session, error)
 	Verify       func(context.Context, session.Session) error
 	Save         func(string, session.Session) error
 }
@@ -93,20 +87,11 @@ func validateLoginOptions(opts LoginOptions) error {
 	if err := session.ValidateProfile(opts.Profile); err != nil {
 		return fmt.Errorf("invalid login profile: %w", err)
 	}
+	if opts.Authenticate == nil {
+		return errors.New("login authenticate callback is required")
+	}
 	if opts.Verify == nil || opts.Save == nil {
 		return errors.New("login verify and save callbacks are required")
-	}
-	switch opts.Method {
-	case auth.MethodPassword:
-		if opts.Authenticate == nil {
-			return errors.New("password login requires an authenticate callback")
-		}
-	case auth.MethodBrowserSession:
-		if opts.ParseCookies == nil {
-			return errors.New("browser-session login requires a cookie parser")
-		}
-	default:
-		return fmt.Errorf("unsupported login method %q", opts.Method)
 	}
 	return nil
 }

@@ -83,7 +83,7 @@ func buildRoot(cfg config.Config, deps Dependencies) (*cobra.Command, *applicati
 	}
 	root := &cobra.Command{
 		Use: "monarch", Short: "Read-only Monarch Money CLI and MCP server",
-		Long:    "monarch provides interactive login, read-only queries, JSON output, and a local stdio MCP server for Monarch Money.",
+		Long:    "A joyful CLI utility and MCP server for Monarch Money.",
 		Version: app.version, SilenceErrors: true, SilenceUsage: true,
 		TraverseChildren: true, Args: subcommandsOnly, RunE: showHelp,
 		Annotations: map[string]string{"help-only": "true"},

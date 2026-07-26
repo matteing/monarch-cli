@@ -8,7 +8,6 @@ import (
 	"github.com/spf13/cobra"
 
 	"github.com/matteing/monarch-cli/internal/apperr"
-	"github.com/matteing/monarch-cli/internal/auth"
 	"github.com/matteing/monarch-cli/internal/session"
 	"github.com/matteing/monarch-cli/internal/tui"
 )
@@ -22,7 +21,6 @@ type loginResult struct {
 }
 
 func (a *application) loginCommand() *cobra.Command {
-	var method string
 	var force bool
 	command := &cobra.Command{
 		Use:   "login",
@@ -31,10 +29,6 @@ func (a *application) loginCommand() *cobra.Command {
 			"Your password and MFA code are not stored anywhere. They are discarded after login; password login keeps only the session token.",
 		Args: noArgs,
 		RunE: func(cmd *cobra.Command, _ []string) error {
-			loginMethod := auth.Method(method)
-			if !loginMethod.Valid() {
-				return apperr.New(apperr.KindInvalidInput, "login", "pick password or browser-session for --method", nil)
-			}
 			if !force {
 				existing, loadErr := a.store.Load(a.config.Profile)
 				if loadErr == nil {
@@ -52,7 +46,7 @@ func (a *application) loginCommand() *cobra.Command {
 				}
 			}
 
-			value, err := a.login(cmd.Context(), loginMethod)
+			value, err := a.login(cmd.Context())
 			if err != nil {
 				return err
 			}
@@ -62,7 +56,7 @@ func (a *application) loginCommand() *cobra.Command {
 					PasswordSaved: false, MFACodeSaved: false,
 				})
 			}
-			message := loginSuccessMessage(value.Mode)
+			message := loginSuccessMessage()
 			if tui.IsTerminal(a.out) {
 				return tui.WriteSuccess(a.out, message)
 			}
@@ -70,19 +64,15 @@ func (a *application) loginCommand() *cobra.Command {
 			return err
 		},
 	}
-	command.Flags().StringVar(&method, "method", string(auth.MethodPassword), "login method: password or browser-session")
 	command.Flags().BoolVar(&force, "force", false, "replace any existing saved session")
 	return command
 }
 
-func loginSuccessMessage(mode session.Mode) string {
-	if mode == session.ModeCookie {
-		return "Signed in. Only the required authentication cookies were retained in the OS keyring."
-	}
+func loginSuccessMessage() string {
 	return "Signed in. Only the session token was saved to the OS keyring."
 }
 
-func (a *application) login(ctx context.Context, method auth.Method) (session.Session, error) {
+func (a *application) login(ctx context.Context) (session.Session, error) {
 	if !tui.IsTerminal(a.in) || !tui.IsTerminal(a.errOut) {
 		return session.Session{}, apperr.New(apperr.KindInvalidInput, "login", "interactive login requires a terminal", nil)
 	}
@@ -90,9 +80,8 @@ func (a *application) login(ctx context.Context, method auth.Method) (session.Se
 		return a.authenticate(ctx, a.config.Timeout, email, password, code)
 	}
 	return tui.RunLogin(tui.LoginOptions{
-		Context: ctx, Input: a.in, Output: a.errOut, Method: method, Profile: a.config.Profile,
+		Context: ctx, Input: a.in, Output: a.errOut, Profile: a.config.Profile,
 		Authenticate: authenticate,
-		ParseCookies: session.ParseCookieHeader,
 		Verify:       a.verify,
 		Save:         a.store.Save,
 	})

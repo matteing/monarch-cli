@@ -5,8 +5,6 @@ import (
 	"errors"
 	"net/http"
 	"net/url"
-	"sort"
-	"strings"
 	"time"
 
 	"github.com/matteing/monarch-cli/internal/apperr"
@@ -41,9 +39,6 @@ type Client struct {
 	httpClient    *http.Client
 	endpoint      string
 	authorization string
-	cookieHeader  string
-	csrfToken     string
-	cookieMode    bool
 	requests      chan struct{}
 	now           func() time.Time
 	retryWait     retryWaitFunc
@@ -89,23 +84,6 @@ func newClient(value session.Session, httpClient *http.Client, endpoint string) 
 		now:        time.Now,
 		retryWait:  waitForRetry,
 	}
-	switch value.Mode {
-	case session.ModeToken:
-		client.authorization = "Token " + value.Token()
-	case session.ModeCookie:
-		cookies := value.Cookies()
-		names := make([]string, 0, len(cookies))
-		for name := range cookies {
-			names = append(names, name)
-		}
-		sort.Strings(names)
-		pairs := make([]string, 0, len(names))
-		for _, name := range names {
-			pairs = append(pairs, name+"="+cookies[name])
-		}
-		client.cookieHeader = strings.Join(pairs, "; ")
-		client.csrfToken = value.Cookie("csrftoken")
-		client.cookieMode = true
-	}
+	client.authorization = "Token " + value.Token()
 	return client, nil
 }

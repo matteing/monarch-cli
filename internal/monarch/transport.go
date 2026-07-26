@@ -11,8 +11,7 @@ import (
 )
 
 const (
-	maxResponseSize  = 10 << 20
-	webClientVersion = "2025.05"
+	maxResponseSize = 10 << 20
 )
 
 var errResponseTooLarge = errors.New("response exceeds 10 MiB limit")
@@ -28,14 +27,6 @@ func (c *Client) do(ctx context.Context, payload []byte) ([]byte, int, http.Head
 	req.Header.Set("Client-Platform", "web")
 	if c.authorization != "" {
 		req.Header.Set("Authorization", c.authorization)
-	}
-	if c.cookieMode {
-		req.Header.Set("Cookie", c.cookieHeader)
-		req.Header.Set("Origin", "https://app.monarch.com")
-		req.Header.Set("Referer", "https://app.monarch.com/")
-		req.Header.Set("X-Csrftoken", c.csrfToken)
-		req.Header.Set("monarch-client", "web")
-		req.Header.Set("monarch-client-version", webClientVersion)
 	}
 	resp, err := c.httpClient.Do(req)
 	if err != nil {
