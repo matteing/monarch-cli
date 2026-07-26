@@ -24,28 +24,46 @@ No write operations (yet).
 
 ## Install
 
+Download the archive for your operating system and CPU from the
+[latest release](https://github.com/matteing/monarch-cli/releases/latest):
+
+- macOS: `darwin_arm64` (Apple silicon) or `darwin_amd64` (Intel)
+- Linux: `linux_arm64` or `linux_amd64`
+- Windows: `windows_arm64` or `windows_amd64`
+
+Verify the archive against the release's `checksums.txt`, extract it, and move
+`monarch` (`monarch.exe` on Windows) to a directory on `PATH`. Then verify the
+installation:
+
+```sh
+monarch --help
+```
+
+The release binary is self-contained. Installing Monarch CLI does not require
+Go or `mise`.
+
 Tell Codex or another agent to set this up:
 
 > Install Monarch CLI from `github.com/matteing/monarch-cli`. Review the source,
-> use its mise-pinned Go toolchain, run `mise run audit` and `mise run install`,
-> then configure stdio MCP. Discover commands with `monarch --help` and inspect
-> the MCP tools. Create a local skill named **Monarch CLI** with the exact
-> description `Query Monarch Money transactions, accounts, balances, and more.`
-> Keep it read-only. Never handle my credentials; ask me to run
-> `monarch auth login`. Verify with `monarch doctor` without exposing my data.
+> download the archive matching this system from the latest stable GitHub
+> release, verify it against `checksums.txt`, and install the `monarch` binary on
+> `PATH`. Do not install Go or `mise`. Then configure stdio MCP, discover commands
+> with `monarch --help`, and inspect the MCP tools. Create a local skill named
+> **Monarch CLI** with the exact description `Query Monarch Money transactions,
+> accounts, balances, and more.` Keep it read-only. Never handle my credentials;
+> ask me to run `monarch auth login`. Verify with `monarch doctor` without
+> exposing my data.
 
-### Install manually
+### Build from reviewed source
 
-Install [mise](https://mise.jdx.dev/), review the source checkout, then build it
-with the pinned Go toolchain:
+Building from source is optional and requires Go 1.25 or newer:
 
 ```sh
 git clone https://github.com/matteing/monarch-cli.git
 cd monarch-cli
-mise install
-mise run audit
-mise run install
-# Ensure the printed install directory is on PATH, then:
+go test ./...
+go vet ./...
+go install ./cmd/monarch
 monarch --help
 ```
 
@@ -150,7 +168,8 @@ for a keyring failure. Canceled commands use `130`; unexpected errors use `1`.
 
 ## Develop
 
-mise manages the Go version and every project task:
+Development uses [mise](https://mise.jdx.dev/) to pin tool versions and provide
+task aliases. It is a contributor convenience, not an installation requirement:
 
 ```sh
 mise install
