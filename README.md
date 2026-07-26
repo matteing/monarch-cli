@@ -1,6 +1,7 @@
-# Monarch CLI
-
+<p align="center">
+<h2>Monarch CLI</h2>
 ✨ A joyful CLI and MCP server for Monarch Money.
+</p>
 
 > [!IMPORTANT]
 > I built this for myself! It is not affiliated with or endorsed by Monarch.
