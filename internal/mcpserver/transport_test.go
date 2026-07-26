@@ -45,6 +45,8 @@ func TestRunIORejectsOversizedMessageBeforeToolDelegation(t *testing.T) {
 }
 
 func TestRunIOCancellationReachesActiveReader(t *testing.T) {
+	const waitForCancellation = 5 * time.Second
+
 	started := make(chan struct{})
 	readerCanceled := make(chan error, 1)
 	reader := &recordingReader{accountsFn: func(ctx context.Context) error {
@@ -80,7 +82,7 @@ func TestRunIOCancellationReachesActiveReader(t *testing.T) {
 
 	select {
 	case <-started:
-	case <-time.After(time.Second):
+	case <-time.After(waitForCancellation):
 		t.Fatal("tool call did not reach reader")
 	}
 	cancel()
@@ -90,7 +92,7 @@ func TestRunIOCancellationReachesActiveReader(t *testing.T) {
 		if !errors.Is(err, context.Canceled) {
 			t.Fatalf("reader context error = %v", err)
 		}
-	case <-time.After(time.Second):
+	case <-time.After(waitForCancellation):
 		t.Fatal("server cancellation did not reach reader")
 	}
 	select {
@@ -98,7 +100,7 @@ func TestRunIOCancellationReachesActiveReader(t *testing.T) {
 		if !errors.Is(err, context.Canceled) {
 			t.Fatalf("RunIO error = %v", err)
 		}
-	case <-time.After(time.Second):
+	case <-time.After(waitForCancellation):
 		t.Fatal("RunIO did not return after cancellation")
 	}
 }

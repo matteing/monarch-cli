@@ -6,8 +6,6 @@ import (
 	"time"
 )
 
-const keyringProbeTimeout = 2 * time.Second
-
 type keyringProbeRunner func(context.Context, string, string) ([]byte, error)
 
 // looksLikeKeyringAccessFailure recognizes macOS security errors that

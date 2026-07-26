@@ -5,7 +5,10 @@ package session
 import (
 	"context"
 	"os/exec"
+	"time"
 )
+
+const keyringProbeTimeout = 2 * time.Second
 
 // keyringReadBlocked distinguishes a missing item from a process that macOS
 // has denied access to the login keychain. The probe requests item metadata,
