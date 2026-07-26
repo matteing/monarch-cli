@@ -24,16 +24,15 @@ Write operations and arbitrary GraphQL are deliberately out of scope.
 
 ### Tell an agent
 
-Tell Codex the following:
+Give your coding agent the following instructions:
 
 > Install Monarch CLI from `github.com/matteing/monarch-cli`. Inspect the
 > repository before running anything, use mise to download the pinned Go
-> toolchain, run the full audit, build and install the CLI, then configure its local
-> stdio MCP server. If you are Codex, add the repository's `monarch-cli`
-> marketplace and install the `monarch-cli` plugin; it already contains the
-> usage skill, so do not invent a second one. If you use another agent, reuse
-> `plugins/monarch-cli/skills/use-monarch-money/SKILL.md` where supported. Do
-> not ask me for credentials or place them in commands—stop and ask me to run
+> toolchain, run the full audit, build and install the CLI, then configure its
+> local stdio MCP server. Discover the available commands with `monarch --help`
+> and the relevant subcommand help, inspect the MCP tools, and write your own
+> local skill for using the read-only interface safely. Do not ask me for
+> credentials or place them in commands—stop and ask me to run
 > `monarch auth login` in a real terminal. Finish by running `monarch doctor`
 > without printing my financial data.
 
@@ -171,21 +170,6 @@ stdout is reserved for JSON-RPC; diagnostics go to stderr. Stdio input is
 bounded to 512 KiB per newline-delimited message and 16 MiB per server process;
 clients with unusually long sessions should reconnect before the session
 budget is exhausted.
-
-### Codex plugin
-
-The repository is also a Codex marketplace. From the root of the reviewed
-checkout, once `monarch` is installed and on Codex's `PATH`:
-
-```sh
-codex plugin marketplace add .
-codex plugin add monarch-cli@monarch-cli
-```
-
-Start a new Codex task after installation so it discovers the MCP tools and the
-bundled [`use-monarch-money`](plugins/monarch-cli/skills/use-monarch-money/SKILL.md)
-skill. The plugin contains source and configuration only; it does not hide a
-platform binary or credentials in the plugin bundle.
 
 ## Configuration
 

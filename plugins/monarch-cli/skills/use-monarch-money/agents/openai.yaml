@@ -1,4 +1,0 @@
-interface:
-  display_name: "Monarch Money"
-  short_description: "Read Monarch Money data safely"
-  default_prompt: "Use $use-monarch-money to review my recent spending."
