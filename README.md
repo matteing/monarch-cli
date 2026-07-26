@@ -1,13 +1,13 @@
 # Monarch CLI
 
-A ✨ joyful CLI and MCP server for Monarch Money.
+✨ A joyful CLI and MCP server for Monarch Money.
 
 > [!IMPORTANT]
 > I built this for myself! It is not affiliated with or endorsed by Monarch.
 
 ## Why?
 
-Monarch recently shut down their hosted MCP solution. Other solutions are written in Python which requires virtualenvs/package management/etc--I wanted a self-contained solution that can be statically compiled and run anywhere.
+Monarch recently shut down their MCP solution. Other solutions are written in interpreted languages. I wanted a self-contained, single binary solution. And I like learning and building things.
 
 ## What it does
 
