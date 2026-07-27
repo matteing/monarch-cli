@@ -138,6 +138,49 @@
     }
   },
   {
+    "name": "monarch_accounts_refresh",
+    "input_schema": {
+      "additionalProperties": false,
+      "properties": {
+        "account_ids": {
+          "description": "Monarch account IDs to refresh. Get IDs from monarch_accounts_list.",
+          "items": {
+            "maxLength": 200,
+            "minLength": 1,
+            "type": "string"
+          },
+          "maxItems": 50,
+          "minItems": 1,
+          "type": "array",
+          "uniqueItems": true
+        }
+      },
+      "required": [
+        "account_ids"
+      ],
+      "type": "object"
+    },
+    "output_schema": {
+      "additionalProperties": false,
+      "properties": {
+        "accepted": {
+          "type": "boolean"
+        },
+        "account_ids": {
+          "items": {
+            "type": "string"
+          },
+          "type": "array"
+        }
+      },
+      "required": [
+        "accepted",
+        "account_ids"
+      ],
+      "type": "object"
+    }
+  },
+  {
     "name": "monarch_budgets_get",
     "input_schema": {
       "additionalProperties": false,

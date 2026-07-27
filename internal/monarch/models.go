@@ -110,6 +110,18 @@ type AccountsResult struct {
 	Accounts []Account `json:"accounts"`
 }
 
+// RefreshAccountsParams identifies the connected accounts to refresh.
+type RefreshAccountsParams struct {
+	AccountIDs []string `json:"account_ids"`
+}
+
+// AccountRefreshResult confirms that Monarch accepted a refresh request.
+// Refresh runs asynchronously; acceptance does not mean syncing is complete.
+type AccountRefreshResult struct {
+	Accepted   bool     `json:"accepted"`
+	AccountIDs []string `json:"account_ids"`
+}
+
 // CategoryGroup describes a group such as income or expense.
 type CategoryGroup struct {
 	ID   string `json:"id"`

@@ -11,7 +11,7 @@ func (a *application) cashflowCommand() *cobra.Command {
 	summary := &cobra.Command{
 		Use: "summary", Short: "Summarize cashflow for an inclusive date range", Args: noArgs,
 		RunE: func(cmd *cobra.Command, _ []string) error {
-			reader, err := a.reader()
+			reader, err := a.service()
 			if err != nil {
 				return err
 			}

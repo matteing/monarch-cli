@@ -21,6 +21,7 @@ import (
 
 type recordingReader struct {
 	accountsParams     monarch.ListAccountsParams
+	refreshParams      monarch.RefreshAccountsParams
 	transactionsParams monarch.ListTransactionsParams
 	transactionID      string
 	budgetRange        monarch.MonthRange
@@ -39,6 +40,12 @@ func (r *recordingReader) ListAccounts(ctx context.Context, params monarch.ListA
 		return monarch.AccountsResult{}, r.accountsFn(ctx)
 	}
 	return monarch.AccountsResult{Accounts: []monarch.Account{}}, r.err
+}
+
+func (r *recordingReader) RefreshAccounts(_ context.Context, params monarch.RefreshAccountsParams) (monarch.AccountRefreshResult, error) {
+	r.calls = append(r.calls, "refresh_accounts")
+	r.refreshParams = params
+	return monarch.AccountRefreshResult{Accepted: true, AccountIDs: append([]string(nil), params.AccountIDs...)}, r.err
 }
 
 func (r *recordingReader) ListTransactions(_ context.Context, params monarch.ListTransactionsParams) (monarch.TransactionPage, error) {
@@ -83,10 +90,10 @@ func (r *recordingReader) GetFinancialOverview(_ context.Context, dates monarch.
 	}, r.err
 }
 
-func connectTestServer(t *testing.T, reader monarch.Reader) (context.Context, *mcp.ClientSession) {
+func connectTestServer(t *testing.T, service monarch.Service) (context.Context, *mcp.ClientSession) {
 	t.Helper()
 	ctx := context.Background()
-	server := NewWithLogger(reader, "test", nil)
+	server := NewWithLogger(service, "test", nil)
 	client := mcp.NewClient(&mcp.Implementation{Name: "test-client", Version: "test"}, nil)
 	serverTransport, clientTransport := mcp.NewInMemoryTransports()
 	serverSession, err := server.Connect(ctx, serverTransport, nil)
@@ -111,7 +118,7 @@ func callTool(t *testing.T, ctx context.Context, session *mcp.ClientSession, nam
 	return result
 }
 
-func TestServerPublishesExactReadOnlyToolsAndSchemaSnapshot(t *testing.T) {
+func TestServerPublishesExactToolsAndSchemaSnapshot(t *testing.T) {
 	reader := &recordingReader{}
 	ctx, session := connectTestServer(t, reader)
 	result, err := session.ListTools(ctx, nil)
@@ -119,21 +126,14 @@ func TestServerPublishesExactReadOnlyToolsAndSchemaSnapshot(t *testing.T) {
 		t.Fatal(err)
 	}
 	wantNames := []string{
-		"monarch_accounts_list", "monarch_budgets_get", "monarch_cashflow_summary",
+		"monarch_accounts_list", "monarch_accounts_refresh", "monarch_budgets_get", "monarch_cashflow_summary",
 		"monarch_categories_list", "monarch_financial_overview", "monarch_transaction_get",
 		"monarch_transactions_list",
 	}
 	gotNames := make([]string, 0, len(result.Tools))
 	for _, tool := range result.Tools {
 		gotNames = append(gotNames, tool.Name)
-		if tool.Annotations == nil || !tool.Annotations.ReadOnlyHint || !tool.Annotations.IdempotentHint ||
-			tool.Annotations.OpenWorldHint == nil || !*tool.Annotations.OpenWorldHint ||
-			tool.Annotations.DestructiveHint == nil || *tool.Annotations.DestructiveHint {
-			t.Errorf("tool %s lacks complete read-only annotations", tool.Name)
-		}
-		if tool.InputSchema == nil || tool.OutputSchema == nil {
-			t.Errorf("tool %s lacks explicitly attached schemas", tool.Name)
-		}
+		assertToolMetadata(t, tool)
 	}
 	if strings.Join(gotNames, ",") != strings.Join(wantNames, ",") {
 		t.Fatalf("tool names = %v, want %v", gotNames, wantNames)
@@ -149,6 +149,26 @@ func TestServerPublishesExactReadOnlyToolsAndSchemaSnapshot(t *testing.T) {
 	}
 	if !bytes.Equal(got, want) {
 		t.Fatalf("tool schemas changed; inspect the contract and update testdata/tool-schemas.json intentionally\n\ngot:\n%s\nwant:\n%s", got, want)
+	}
+}
+
+func assertToolMetadata(t *testing.T, tool *mcp.Tool) {
+	t.Helper()
+	if tool.Annotations == nil ||
+		tool.Annotations.OpenWorldHint == nil || !*tool.Annotations.OpenWorldHint ||
+		tool.Annotations.DestructiveHint == nil || *tool.Annotations.DestructiveHint {
+		t.Errorf("tool %s lacks complete safety annotations", tool.Name)
+		return
+	}
+	if tool.Name == "monarch_accounts_refresh" {
+		if tool.Annotations.ReadOnlyHint || tool.Annotations.IdempotentHint {
+			t.Errorf("refresh tool incorrectly claims read-only or idempotent behavior")
+		}
+	} else if !tool.Annotations.ReadOnlyHint || !tool.Annotations.IdempotentHint {
+		t.Errorf("tool %s lacks read-only annotations", tool.Name)
+	}
+	if tool.InputSchema == nil || tool.OutputSchema == nil {
+		t.Errorf("tool %s lacks explicitly attached schemas", tool.Name)
 	}
 }
 
@@ -192,6 +212,7 @@ func TestAllToolsDelegateEveryInput(t *testing.T) {
 		args map[string]any
 	}{
 		{"monarch_accounts_list", map[string]any{"include_hidden": true, "include_deactivated": true}},
+		{"monarch_accounts_refresh", map[string]any{"account_ids": []string{"account:1/path", "account.2"}}},
 		{"monarch_transactions_list", map[string]any{
 			"start_date": "2026-07-01", "end_date": "2026-07-31", "search": "coffee",
 			"account_ids": []string{"account:1/path"}, "category_ids": []string{"category.1"},
@@ -211,6 +232,9 @@ func TestAllToolsDelegateEveryInput(t *testing.T) {
 	}
 	if !reader.accountsParams.IncludeHidden || !reader.accountsParams.IncludeDeactivated {
 		t.Fatalf("account params = %+v", reader.accountsParams)
+	}
+	if strings.Join(reader.refreshParams.AccountIDs, ",") != "account:1/path,account.2" {
+		t.Fatalf("refresh params = %+v", reader.refreshParams)
 	}
 	if got := reader.transactionsParams; got.StartDate != "2026-07-01" || got.EndDate != "2026-07-31" || got.Search != "coffee" || got.Limit != 7 || got.Cursor != "cursor" || strings.Join(got.AccountIDs, ",") != "account:1/path" || strings.Join(got.CategoryIDs, ",") != "category.1" || strings.Join(got.TagIDs, ",") != "tag_1" {
 		t.Fatalf("transaction params = %+v", got)
@@ -301,6 +325,27 @@ func TestSchemaRejectsInvalidInputBeforeReader(t *testing.T) {
 		{"account_ids": []string{""}},
 	} {
 		result, err := session.CallTool(ctx, &mcp.CallToolParams{Name: "monarch_transactions_list", Arguments: args})
+		if err != nil {
+			t.Fatalf("arguments %+v returned protocol error: %v", args, err)
+		}
+		if !result.IsError {
+			t.Fatalf("arguments %+v were accepted", args)
+		}
+	}
+	if len(reader.calls) != 0 {
+		t.Fatalf("reader calls = %v", reader.calls)
+	}
+}
+
+func TestRefreshSchemaRejectsMissingEmptyAndDuplicateIDs(t *testing.T) {
+	reader := &recordingReader{}
+	ctx, session := connectTestServer(t, reader)
+	for _, args := range []map[string]any{
+		{},
+		{"account_ids": []string{}},
+		{"account_ids": []string{"account", "account"}},
+	} {
+		result, err := session.CallTool(ctx, &mcp.CallToolParams{Name: "monarch_accounts_refresh", Arguments: args})
 		if err != nil {
 			t.Fatalf("arguments %+v returned protocol error: %v", args, err)
 		}

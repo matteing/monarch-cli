@@ -11,7 +11,7 @@ func (a *application) budgetsCommand() *cobra.Command {
 	get := &cobra.Command{
 		Use: "get", Short: "Get budgets for an inclusive month range", Args: noArgs,
 		RunE: func(cmd *cobra.Command, _ []string) error {
-			reader, err := a.reader()
+			reader, err := a.service()
 			if err != nil {
 				return err
 			}

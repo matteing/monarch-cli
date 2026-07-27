@@ -14,8 +14,8 @@ import (
 	"github.com/matteing/monarch-cli/internal/session"
 )
 
-// ReaderFactory constructs a Monarch reader without performing network I/O.
-type ReaderFactory func(session.Session, time.Duration) (monarch.Reader, error)
+// ServiceFactory constructs a Monarch service without performing network I/O.
+type ServiceFactory func(session.Session, time.Duration) (monarch.Service, error)
 
 // AuthenticateFunc performs one password or MFA authentication attempt.
 type AuthenticateFunc func(context.Context, time.Duration, string, string, string) (session.Session, error)
@@ -24,7 +24,7 @@ type AuthenticateFunc func(context.Context, time.Duration, string, string, strin
 type VerifyFunc func(context.Context, monarch.Reader) error
 
 // MCPRunner serves MCP over caller-provided streams.
-type MCPRunner func(context.Context, monarch.Reader, string, io.Reader, io.Writer, *slog.Logger) error
+type MCPRunner func(context.Context, monarch.Service, string, io.Reader, io.Writer, *slog.Logger) error
 
 // Dependencies contains command side effects that tests and embedders may replace.
 type Dependencies struct {
@@ -32,7 +32,7 @@ type Dependencies struct {
 	Input        io.Reader
 	Output       io.Writer
 	ErrorOutput  io.Writer
-	NewReader    ReaderFactory
+	NewService   ServiceFactory
 	Authenticate AuthenticateFunc
 	Verify       VerifyFunc
 	RunMCP       MCPRunner
@@ -46,7 +46,7 @@ type application struct {
 	in           io.Reader
 	out          io.Writer
 	errOut       io.Writer
-	newReader    ReaderFactory
+	newService   ServiceFactory
 	authenticate AuthenticateFunc
 	verifyReader VerifyFunc
 	runMCP       MCPRunner
@@ -57,7 +57,7 @@ type application struct {
 func productionDependencies() Dependencies {
 	return Dependencies{
 		Store: session.KeyringStore{}, Input: os.Stdin, Output: os.Stdout, ErrorOutput: os.Stderr,
-		NewReader: func(value session.Session, timeout time.Duration) (monarch.Reader, error) {
+		NewService: func(value session.Session, timeout time.Duration) (monarch.Service, error) {
 			return monarch.NewClient(value, timeout)
 		},
 		Authenticate: func(ctx context.Context, timeout time.Duration, email, password, code string) (session.Session, error) {
@@ -85,8 +85,8 @@ func withDependencyDefaults(deps Dependencies) Dependencies {
 	if deps.ErrorOutput == nil {
 		deps.ErrorOutput = defaults.ErrorOutput
 	}
-	if deps.NewReader == nil {
-		deps.NewReader = defaults.NewReader
+	if deps.NewService == nil {
+		deps.NewService = defaults.NewService
 	}
 	if deps.Authenticate == nil {
 		deps.Authenticate = defaults.Authenticate
@@ -100,10 +100,10 @@ func withDependencyDefaults(deps Dependencies) Dependencies {
 	return deps
 }
 
-func (a *application) reader() (monarch.Reader, error) {
+func (a *application) service() (monarch.Service, error) {
 	value, err := a.store.Load(a.config.Profile)
 	if err != nil {
 		return nil, err
 	}
-	return a.newReader(value, a.config.Timeout)
+	return a.newService(value, a.config.Timeout)
 }

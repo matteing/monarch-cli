@@ -11,14 +11,23 @@ import (
 	"github.com/matteing/monarch-cli/internal/monarch"
 )
 
-func registerTools(server *mcp.Server, reader monarch.Reader) {
+func registerTools(server *mcp.Server, service monarch.Service) {
 	addReadOnlyTool(server, &mcp.Tool{
 		Name:        "monarch_accounts_list",
 		Title:       "List Monarch accounts",
 		Description: "List financial accounts and exact balances. Hidden and deactivated accounts are omitted by default.",
 		InputSchema: accountsSchema(),
 	}, func(ctx context.Context, input monarch.ListAccountsParams) (monarch.AccountsResult, error) {
-		return reader.ListAccounts(ctx, input)
+		return service.ListAccounts(ctx, input)
+	})
+
+	addTool(server, &mcp.Tool{
+		Name:        "monarch_accounts_refresh",
+		Title:       "Refresh Monarch accounts",
+		Description: "Ask Monarch to asynchronously refresh one or more connected accounts. Acceptance does not mean syncing is complete.",
+		InputSchema: refreshAccountsSchema(),
+	}, refreshAnnotations(), func(ctx context.Context, input monarch.RefreshAccountsParams) (monarch.AccountRefreshResult, error) {
+		return service.RefreshAccounts(ctx, input)
 	})
 
 	addReadOnlyTool(server, &mcp.Tool{
@@ -27,7 +36,7 @@ func registerTools(server *mcp.Server, reader monarch.Reader) {
 		Description: fmt.Sprintf("List or search transactions with optional date and ID filters. Results are capped at %d and paginated with an opaque cursor.", monarch.MaxTransactionPageSize),
 		InputSchema: transactionsSchema(),
 	}, func(ctx context.Context, input monarch.ListTransactionsParams) (monarch.TransactionPage, error) {
-		return reader.ListTransactions(ctx, input)
+		return service.ListTransactions(ctx, input)
 	})
 
 	addReadOnlyTool(server, &mcp.Tool{
@@ -36,7 +45,7 @@ func registerTools(server *mcp.Server, reader monarch.Reader) {
 		Description: "Get one transaction and its category, merchant, account, tags, notes, and attachment metadata.",
 		InputSchema: transactionSchema(),
 	}, func(ctx context.Context, input TransactionInput) (monarch.TransactionResult, error) {
-		return reader.GetTransaction(ctx, input.ID)
+		return service.GetTransaction(ctx, input.ID)
 	})
 
 	addReadOnlyTool(server, &mcp.Tool{
@@ -45,7 +54,7 @@ func registerTools(server *mcp.Server, reader monarch.Reader) {
 		Description: "List transaction and budget categories with their category groups.",
 		InputSchema: emptySchema(),
 	}, func(ctx context.Context, _ EmptyInput) (monarch.CategoriesResult, error) {
-		return reader.ListCategories(ctx)
+		return service.ListCategories(ctx)
 	})
 
 	addReadOnlyTool(server, &mcp.Tool{
@@ -54,7 +63,7 @@ func registerTools(server *mcp.Server, reader monarch.Reader) {
 		Description: "Get planned, actual, remaining, and rollover amounts by category and category group. Omit both months for the current month.",
 		InputSchema: budgetsSchema(),
 	}, func(ctx context.Context, input monarch.MonthRange) (monarch.BudgetReport, error) {
-		return reader.GetBudgets(ctx, input)
+		return service.GetBudgets(ctx, input)
 	})
 
 	addReadOnlyTool(server, &mcp.Tool{
@@ -63,7 +72,7 @@ func registerTools(server *mcp.Server, reader monarch.Reader) {
 		Description: "Return income, expenses, savings, and savings rate. Omit both dates for the current month.",
 		InputSchema: dateRangeSchema(),
 	}, func(ctx context.Context, input monarch.DateRange) (monarch.CashflowSummary, error) {
-		return reader.GetCashflow(ctx, input)
+		return service.GetCashflow(ctx, input)
 	})
 
 	addReadOnlyTool(server, &mcp.Tool{
@@ -72,7 +81,25 @@ func registerTools(server *mcp.Server, reader monarch.Reader) {
 		Description: fmt.Sprintf("Return current net worth and accounts with cashflow, budget, and up to %d transactions for the requested range. Independent reads are not an atomic snapshot. Omit both dates for the current month.", monarch.FinancialOverviewTransactionLimit),
 		InputSchema: dateRangeSchema(),
 	}, func(ctx context.Context, input monarch.DateRange) (monarch.FinancialOverview, error) {
-		return reader.GetFinancialOverview(ctx, input)
+		return service.GetFinancialOverview(ctx, input)
+	})
+}
+
+func addTool[Input, Output any](
+	server *mcp.Server,
+	tool *mcp.Tool,
+	annotations *mcp.ToolAnnotations,
+	invoke func(context.Context, Input) (Output, error),
+) {
+	tool.Annotations = annotations
+	tool.OutputSchema = outputSchema[Output]()
+	mcp.AddTool(server, tool, func(
+		ctx context.Context,
+		_ *mcp.CallToolRequest,
+		input Input,
+	) (*mcp.CallToolResult, Output, error) {
+		output, err := invoke(ctx, input)
+		return nil, output, toolError(err)
 	})
 }
 
@@ -81,23 +108,22 @@ func addReadOnlyTool[Input, Output any](
 	tool *mcp.Tool,
 	read func(context.Context, Input) (Output, error),
 ) {
-	tool.Annotations = readOnlyAnnotations()
-	tool.OutputSchema = outputSchema[Output]()
-	mcp.AddTool(server, tool, func(
-		ctx context.Context,
-		_ *mcp.CallToolRequest,
-		input Input,
-	) (*mcp.CallToolResult, Output, error) {
-		output, err := read(ctx, input)
-		return nil, output, toolError(err)
-	})
+	addTool(server, tool, readOnlyAnnotations(), read)
 }
 
 func readOnlyAnnotations() *mcp.ToolAnnotations {
+	return toolAnnotations(true, true)
+}
+
+func refreshAnnotations() *mcp.ToolAnnotations {
+	return toolAnnotations(false, false)
+}
+
+func toolAnnotations(readOnly, idempotent bool) *mcp.ToolAnnotations {
 	openWorld, destructive := true, false
 	return &mcp.ToolAnnotations{
-		ReadOnlyHint:    true,
-		IdempotentHint:  true,
+		ReadOnlyHint:    readOnly,
+		IdempotentHint:  idempotent,
 		OpenWorldHint:   &openWorld,
 		DestructiveHint: &destructive,
 	}

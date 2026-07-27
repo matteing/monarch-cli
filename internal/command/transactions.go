@@ -26,7 +26,7 @@ JSON and piped output return one page; pass --cursor to continue.`,
 			if err := validateTransactionGroup(group); err != nil {
 				return err
 			}
-			reader, err := a.reader()
+			reader, err := a.service()
 			if err != nil {
 				return err
 			}
@@ -82,7 +82,7 @@ JSON and piped output return one page; pass --cursor to continue.`,
 	get := &cobra.Command{
 		Use: "get TRANSACTION_ID", Short: "Get one transaction", Args: exactArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) error {
-			reader, err := a.reader()
+			reader, err := a.service()
 			if err != nil {
 				return err
 			}

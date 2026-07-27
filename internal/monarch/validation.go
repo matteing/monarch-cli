@@ -123,16 +123,23 @@ func validateIDs(groups ...[]string) error {
 		if len(ids) > MaxTransactionFilterIDs {
 			return fmt.Errorf("each ID filter is limited to %d values", MaxTransactionFilterIDs)
 		}
-		seen := make(map[string]struct{}, len(ids))
-		for _, id := range ids {
-			if !validOpaqueID(id) {
-				return fmt.Errorf("filter IDs must be 1-%d printable characters", MaxOpaqueIDLength)
-			}
-			if _, duplicate := seen[id]; duplicate {
-				return errors.New("filter IDs must be unique")
-			}
-			seen[id] = struct{}{}
+		if err := validateUniqueOpaqueIDs(ids, "filter IDs"); err != nil {
+			return err
 		}
+	}
+	return nil
+}
+
+func validateUniqueOpaqueIDs(ids []string, label string) error {
+	seen := make(map[string]struct{}, len(ids))
+	for _, id := range ids {
+		if !validOpaqueID(id) {
+			return fmt.Errorf("%s must be 1-%d printable characters", label, MaxOpaqueIDLength)
+		}
+		if _, duplicate := seen[id]; duplicate {
+			return fmt.Errorf("%s must be unique", label)
+		}
+		seen[id] = struct{}{}
 	}
 	return nil
 }

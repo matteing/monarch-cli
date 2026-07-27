@@ -54,6 +54,16 @@ func (f *responseField[T]) UnmarshalJSON(data []byte) error {
 }
 
 func execute[T any](ctx context.Context, client *Client, operation, query string, variables any) (T, error) {
+	return executeWithAttempts[T](ctx, client, operation, query, variables, maxAttempts)
+}
+
+// executeMutation does not retry because a transport failure can happen after
+// Monarch accepted the mutation, making its outcome ambiguous to the client.
+func executeMutation[T any](ctx context.Context, client *Client, operation, query string, variables any) (T, error) {
+	return executeWithAttempts[T](ctx, client, operation, query, variables, 1)
+}
+
+func executeWithAttempts[T any](ctx context.Context, client *Client, operation, query string, variables any, attempts int) (T, error) {
 	var zero T
 	payload, err := json.Marshal(graphQLRequest{Query: query, Variables: variables})
 	if err != nil {
@@ -66,7 +76,7 @@ func execute[T any](ctx context.Context, client *Client, operation, query string
 		return zero, ctx.Err()
 	}
 
-	for attempt := 0; attempt < maxAttempts; attempt++ {
+	for attempt := 0; attempt < attempts; attempt++ {
 		body, status, header, requestErr := client.do(ctx, payload)
 		if requestErr != nil {
 			if ctx.Err() != nil {
@@ -75,7 +85,7 @@ func execute[T any](ctx context.Context, client *Client, operation, query string
 			if errors.Is(requestErr, errResponseTooLarge) {
 				return zero, apperr.New(apperr.KindUnavailable, operation, "Monarch response exceeded the safety limit", requestErr)
 			}
-			if attempt+1 < maxAttempts {
+			if attempt+1 < attempts {
 				if err := client.retryWait(ctx, attempt, 0); err != nil {
 					return zero, err
 				}
@@ -96,7 +106,7 @@ func execute[T any](ctx context.Context, client *Client, operation, query string
 		if retryableStatus(status) {
 			retryAfter := httpx.RetryAfter(header.Get("Retry-After"), client.now())
 			statusErr := retryableHTTPError(operation, status, retryAfter)
-			if attempt+1 < maxAttempts {
+			if attempt+1 < attempts {
 				// Never turn a server-requested delay into a shorter retry. If the
 				// delay exceeds this CLI's bounded wait, surface it to the caller.
 				if retryAfter > maxRetryWait {
@@ -130,7 +140,7 @@ func execute[T any](ctx context.Context, client *Client, operation, query string
 			if appErr.Retryable {
 				appErr.RetryAfter = httpx.RetryAfter(header.Get("Retry-After"), client.now())
 			}
-			if appErr.Retryable && attempt+1 < maxAttempts {
+			if appErr.Retryable && attempt+1 < attempts {
 				if appErr.RetryAfter > maxRetryWait {
 					return zero, appErr
 				}
@@ -180,10 +190,18 @@ func unexpectedResponse(operation, detail string) error {
 }
 
 func classifyGraphQLErrors(operation string, graphQLErrors []graphQLError) *apperr.Error {
-	codes := make([]string, 0, len(graphQLErrors))
-	auth, rateLimited, notFound, invalidInput, retryable := false, false, false, false, false
+	errorCodes := make([]string, 0, len(graphQLErrors))
 	for _, graphErr := range graphQLErrors {
-		code := strings.ToUpper(strings.TrimSpace(graphErr.Extensions.Code))
+		errorCodes = append(errorCodes, graphErr.Extensions.Code)
+	}
+	return classifyErrorCodes(operation, errorCodes)
+}
+
+func classifyErrorCodes(operation string, errorCodes []string) *apperr.Error {
+	codes := make([]string, 0, len(errorCodes))
+	auth, rateLimited, notFound, invalidInput, retryable := false, false, false, false, false
+	for _, errorCode := range errorCodes {
+		code := strings.ToUpper(strings.TrimSpace(errorCode))
 		if code == "" {
 			continue
 		}
@@ -204,9 +222,9 @@ func classifyGraphQLErrors(operation string, graphQLErrors []graphQLError) *appe
 		}
 	}
 	sort.Strings(codes)
-	cause := errors.New("GraphQL response contained errors")
+	cause := errors.New("monarch response contained errors")
 	if len(codes) > 0 {
-		cause = fmt.Errorf("GraphQL error codes: %s", strings.Join(codes, ","))
+		cause = fmt.Errorf("monarch error codes: %s", strings.Join(codes, ","))
 	}
 	switch {
 	case auth:

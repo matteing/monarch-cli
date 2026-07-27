@@ -58,6 +58,10 @@ func (r *commandReader) ListAccounts(_ context.Context, params monarch.ListAccou
 	return monarch.AccountsResult{Accounts: []monarch.Account{}}, nil
 }
 
+func (*commandReader) RefreshAccounts(_ context.Context, params monarch.RefreshAccountsParams) (monarch.AccountRefreshResult, error) {
+	return monarch.AccountRefreshResult{Accepted: true, AccountIDs: params.AccountIDs}, nil
+}
+
 func (r *commandReader) ListTransactions(context.Context, monarch.ListTransactionsParams) (monarch.TransactionPage, error) {
 	return monarch.TransactionPage{Transactions: []monarch.Transaction{}}, r.transactionsErr
 }
@@ -92,15 +96,15 @@ func testSession(t *testing.T) session.Session {
 	return value
 }
 
-func commandDependencies(store session.Store, reader monarch.Reader, input io.Reader, output, errOutput io.Writer) Dependencies {
+func commandDependencies(store session.Store, service monarch.Service, input io.Reader, output, errOutput io.Writer) Dependencies {
 	return Dependencies{
 		Store: store, Input: input, Output: output, ErrorOutput: errOutput,
-		NewReader: func(session.Session, time.Duration) (monarch.Reader, error) { return reader, nil },
-		Verify:    func(context.Context, monarch.Reader) error { return nil },
+		NewService: func(session.Session, time.Duration) (monarch.Service, error) { return service, nil },
+		Verify:     func(context.Context, monarch.Reader) error { return nil },
 		Authenticate: func(context.Context, time.Duration, string, string, string) (session.Session, error) {
 			return session.Session{}, errors.New("unexpected authentication")
 		},
-		RunMCP: func(context.Context, monarch.Reader, string, io.Reader, io.Writer, *slog.Logger) error {
+		RunMCP: func(context.Context, monarch.Service, string, io.Reader, io.Writer, *slog.Logger) error {
 			return errors.New("unexpected MCP run")
 		},
 	}
@@ -295,7 +299,7 @@ func TestMCPCommandUsesInjectedRunnerAndStreams(t *testing.T) {
 	reader := &commandReader{}
 	deps := commandDependencies(store, reader, input, &output, io.Discard)
 	called := false
-	deps.RunMCP = func(_ context.Context, got monarch.Reader, version string, gotInput io.Reader, gotOutput io.Writer, logger *slog.Logger) error {
+	deps.RunMCP = func(_ context.Context, got monarch.Service, version string, gotInput io.Reader, gotOutput io.Writer, logger *slog.Logger) error {
 		called = true
 		if got != reader || gotInput != input || gotOutput != &output || version == "" || logger == nil {
 			t.Fatalf("unexpected MCP dependencies: reader=%T version=%q input=%T output=%T logger=%v", got, version, gotInput, gotOutput, logger)

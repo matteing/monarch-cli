@@ -11,7 +11,7 @@ func (a *application) accountsCommand() *cobra.Command {
 	list := &cobra.Command{
 		Use: "list", Short: "List accounts", Args: noArgs,
 		RunE: func(cmd *cobra.Command, _ []string) error {
-			reader, err := a.reader()
+			reader, err := a.service()
 			if err != nil {
 				return err
 			}

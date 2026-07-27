@@ -8,12 +8,14 @@ import (
 
 // Public input bounds are shared by the client, CLI, and MCP schemas.
 const (
+	maxIDsPerRequest           = 50
 	DefaultTransactionPageSize = 25
 	MaxTransactionPageSize     = 100
 	MaxTransactionSearchLength = 200
-	MaxTransactionFilterIDs    = 50
+	MaxTransactionFilterIDs    = maxIDsPerRequest
 	MaxOpaqueIDLength          = 200
 	MaxTransactionCursorLength = 256
+	MaxAccountRefreshIDs       = maxIDsPerRequest
 	maxTransactionOffset       = 10_000_000
 	// FinancialOverviewTransactionLimit bounds the overview's recent activity.
 	FinancialOverviewTransactionLimit = 10
@@ -47,6 +49,17 @@ func ValidateTransactionID(id string) error {
 		return fmt.Errorf("transaction ID must be 1-%d printable characters", MaxOpaqueIDLength)
 	}
 	return nil
+}
+
+// ValidateAccountRefreshIDs validates a bounded, non-empty refresh request.
+func ValidateAccountRefreshIDs(ids []string) error {
+	if len(ids) == 0 {
+		return errors.New("at least one account ID is required")
+	}
+	if len(ids) > MaxAccountRefreshIDs {
+		return fmt.Errorf("account refresh is limited to %d IDs", MaxAccountRefreshIDs)
+	}
+	return validateUniqueOpaqueIDs(ids, "account IDs")
 }
 
 // ValidateDateRange validates an optional inclusive date range. Both dates may

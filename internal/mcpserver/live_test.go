@@ -33,13 +33,11 @@ func TestLiveStdioServer(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if len(tools.Tools) != 7 {
-		t.Fatalf("live tool count = %d, want 7", len(tools.Tools))
+	if len(tools.Tools) != 8 {
+		t.Fatalf("live tool count = %d, want 8", len(tools.Tools))
 	}
 	for _, tool := range tools.Tools {
-		if tool.Annotations == nil || !tool.Annotations.ReadOnlyHint || tool.InputSchema == nil || tool.OutputSchema == nil {
-			t.Fatalf("live tool %q is missing read-only annotations or schemas", tool.Name)
-		}
+		assertToolMetadata(t, tool)
 	}
 
 	callLiveTool(t, ctx, session, "monarch_accounts_list", map[string]any{"include_hidden": true, "include_deactivated": true}, nil)

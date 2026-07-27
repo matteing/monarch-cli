@@ -78,7 +78,7 @@ func buildRoot(cfg config.Config, deps Dependencies) (*cobra.Command, *applicati
 	app := &application{
 		config: cfg, configIssues: deps.ConfigIssues,
 		store: deps.Store, in: deps.Input, out: deps.Output, errOut: deps.ErrorOutput,
-		newReader: deps.NewReader, authenticate: deps.Authenticate,
+		newService: deps.NewService, authenticate: deps.Authenticate,
 		verifyReader: deps.Verify, runMCP: deps.RunMCP, version: buildinfo.Current(),
 	}
 	root := &cobra.Command{

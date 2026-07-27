@@ -4,14 +4,14 @@ import "github.com/spf13/cobra"
 
 func (a *application) mcpCommand() *cobra.Command {
 	return &cobra.Command{
-		Use: "mcp", Short: "Serve the read-only MCP protocol over stdio", Args: noArgs,
+		Use: "mcp", Short: "Serve the Monarch MCP protocol over stdio", Args: noArgs,
 		RunE: func(cmd *cobra.Command, _ []string) error {
-			reader, err := a.reader()
+			service, err := a.service()
 			if err != nil {
 				return err
 			}
 			a.logger.Debug("starting MCP server", "profile", a.config.Profile)
-			return a.runMCP(cmd.Context(), reader, a.version, a.in, a.out, a.logger)
+			return a.runMCP(cmd.Context(), service, a.version, a.in, a.out, a.logger)
 		},
 	}
 }

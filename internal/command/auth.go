@@ -13,7 +13,7 @@ func (a *application) authCommand() *cobra.Command {
 }
 
 func (a *application) verify(ctx context.Context, value session.Session) error {
-	client, err := a.newReader(value, a.config.Timeout)
+	client, err := a.newService(value, a.config.Timeout)
 	if err != nil {
 		return err
 	}

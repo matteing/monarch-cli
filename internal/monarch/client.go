@@ -20,6 +20,8 @@ const (
 var (
 	//go:embed query/accounts.graphql
 	accountsQuery string
+	//go:embed query/refresh_accounts.graphql
+	refreshAccountsMutation string
 	//go:embed query/transactions.graphql
 	transactionsQuery string
 	//go:embed query/transaction.graphql
@@ -32,7 +34,7 @@ var (
 	cashflowQuery string
 )
 
-// Client executes the package's fixed set of read-only GraphQL documents.
+// Client executes the package's fixed set of GraphQL documents.
 // It is safe for concurrent use. Authentication state is copied at creation
 // time and cannot be changed through the source Session afterward.
 type Client struct {

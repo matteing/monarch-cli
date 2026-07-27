@@ -30,6 +30,16 @@ func accountsSchema() *jsonschema.Schema {
 	}, nil, nil)
 }
 
+func refreshAccountsSchema() *jsonschema.Schema {
+	return objectSchema(map[string]*jsonschema.Schema{
+		"account_ids": boundedIDArrayProperty(
+			"Monarch account IDs to refresh. Get IDs from monarch_accounts_list.",
+			1,
+			monarch.MaxAccountRefreshIDs,
+		),
+	}, []string{"account_ids"}, nil)
+}
+
 func transactionsSchema() *jsonschema.Schema {
 	return objectSchema(map[string]*jsonschema.Schema{
 		"start_date": dateProperty("Inclusive start date; provide with end_date."),
@@ -87,11 +97,19 @@ func dateProperty(description string) *jsonschema.Schema {
 }
 
 func idArrayProperty(description string) *jsonschema.Schema {
-	return &jsonschema.Schema{
-		Type: "array", MaxItems: jsonschema.Ptr(monarch.MaxTransactionFilterIDs), UniqueItems: true,
+	return boundedIDArrayProperty(description, 0, monarch.MaxTransactionFilterIDs)
+}
+
+func boundedIDArrayProperty(description string, minItems, maxItems int) *jsonschema.Schema {
+	property := &jsonschema.Schema{
+		Type: "array", MaxItems: jsonschema.Ptr(maxItems), UniqueItems: true,
 		Items:       &jsonschema.Schema{Type: "string", MinLength: jsonschema.Ptr(1), MaxLength: jsonschema.Ptr(monarch.MaxOpaqueIDLength)},
 		Description: description,
 	}
+	if minItems > 0 {
+		property.MinItems = jsonschema.Ptr(minItems)
+	}
+	return property
 }
 
 func objectSchema(properties map[string]*jsonschema.Schema, required []string, dependent map[string][]string) *jsonschema.Schema {

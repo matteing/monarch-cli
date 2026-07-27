@@ -25,10 +25,10 @@ var (
 
 // RunIO serves MCP JSON-RPC over caller-provided streams. Closing a session does
 // not close the caller's streams.
-func RunIO(ctx context.Context, reader monarch.Reader, version string, input io.Reader, output io.Writer, logger *slog.Logger) error {
+func RunIO(ctx context.Context, service monarch.Service, version string, input io.Reader, output io.Writer, logger *slog.Logger) error {
 	boundedInput := newBoundedNDJSONReader(input, maxMCPMessageBytes, maxMCPSessionBytes)
 	transport := &mcp.IOTransport{Reader: io.NopCloser(boundedInput), Writer: nopWriteCloser{output}}
-	server := NewWithLogger(reader, version, logger)
+	server := NewWithLogger(service, version, logger)
 	server.AddReceivingMiddleware(cancelWithServer(ctx))
 	err := server.Run(ctx, transport)
 	if errors.Is(err, errMCPMessageTooLarge) || errors.Is(err, errMCPSessionTooLarge) {

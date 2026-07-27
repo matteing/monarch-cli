@@ -13,14 +13,14 @@ Monarch recently shut down their MCP solution. Other solutions are written in in
 
 ## Features
 
-- Lists accounts, transactions, categories, and budgets.
+- Lists accounts, transactions, categories, and budgets, and lets MCP clients request account refreshes.
 - Fetches transaction details, cashflow summaries, and a financial overview.
 - Nice TUI for browsing your transactions.
 - Structured output mode for all your agents <3
 - All features are available as MCP tools over stdio.
 - Stores sessions in the operating system keychain for safety.
 
-No write operations (yet).
+Account refresh is the only write operation and is available through MCP.
 
 ## Install
 
@@ -168,7 +168,7 @@ mise run release:check   # validate release configuration
 mise run release:snapshot # cross-build and package release artifacts locally
 ```
 
-An opt-in live smoke test starts the built MCP server and calls all seven tools
+An opt-in live smoke test starts the built MCP server and calls the seven read tools
 without printing your financial data:
 
 ```sh
