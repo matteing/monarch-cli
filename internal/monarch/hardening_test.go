@@ -364,23 +364,34 @@ func TestNullableTransactionRelationshipsStayNull(t *testing.T) {
 		if !strings.Contains(payload.Query, "has_split_transactions: hasSplitTransactions") {
 			t.Error("list projection omitted hasSplitTransactions")
 		}
+		if !strings.Contains(payload.Query, "notes") {
+			t.Error("list projection omitted transaction notes")
+		}
+		if !strings.Contains(payload.Query, "split_transactions: splitTransactions") {
+			t.Error("list projection omitted split transactions")
+		}
 		if !strings.Contains(payload.Query, "transactions_count: transactionsCount") {
 			t.Error("list projection used the detail-only merchant count field")
 		}
-		return monarchResponse(http.StatusOK, `{"data":{"allTransactions":{"totalCount":1,"results":[{"id":"txn","amount":"-1.20","date":"2026-07-25","has_split_transactions":true,"category":null,"merchant":null,"account":{"id":"acct","display_name":"Checking"},"goal":null}]}}}`), nil
+		return monarchResponse(http.StatusOK, `{"data":{"allTransactions":{"totalCount":1,"results":[{"id":"txn","amount":"-1.20","date":"2026-07-25","notes":"Parent note","has_split_transactions":true,"category":null,"merchant":null,"account":{"id":"acct","display_name":"Checking"},"goal":null,"split_transactions":[{"id":"split","amount":"-1.20","notes":"Split note","category":null,"merchant":null}]}]}}}`), nil
 	}))
 	page, err := client.ListTransactions(context.Background(), ListTransactionsParams{Limit: 1})
 	if err != nil {
 		t.Fatal(err)
 	}
-	if page.Transactions[0].Category != nil || page.Transactions[0].Merchant != nil || page.Transactions[0].Goal != nil {
-		t.Fatalf("nullable relationships were fabricated: %+v", page.Transactions[0])
+	transaction := page.Transactions[0]
+	if transaction.Category != nil || transaction.Merchant != nil || transaction.Goal != nil {
+		t.Fatalf("nullable relationships were fabricated: %+v", transaction)
+	}
+	if transaction.Notes != "Parent note" || len(transaction.SplitTransactions) != 1 ||
+		transaction.SplitTransactions[0].Notes != "Split note" {
+		t.Fatalf("list projection lost notes or splits: %+v", transaction)
 	}
 	encoded, err := json.Marshal(page)
 	if err != nil {
 		t.Fatal(err)
 	}
-	want := `{"transactions":[{"id":"txn","amount":"-1.20","pending":false,"date":"2026-07-25","hide_from_reports":false,"is_recurring":false,"needs_review":false,"has_split_transactions":true,"is_split_transaction":false,"category":null,"merchant":null,"account":{"id":"acct","display_name":"Checking"}}],"total_count":1}`
+	want := `{"transactions":[{"id":"txn","amount":"-1.20","pending":false,"date":"2026-07-25","hide_from_reports":false,"notes":"Parent note","is_recurring":false,"needs_review":false,"has_split_transactions":true,"is_split_transaction":false,"split_transactions":[{"id":"split","amount":"-1.20","notes":"Split note","category":null,"merchant":null}],"category":null,"merchant":null,"account":{"id":"acct","display_name":"Checking"}}],"total_count":1}`
 	if string(encoded) != want {
 		t.Fatalf("projection mismatch\n got: %s\nwant: %s", encoded, want)
 	}
@@ -395,23 +406,27 @@ func TestTransactionDetailProjectionMatchesModel(t *testing.T) {
 		if !strings.Contains(payload.Query, "data_provider_description: dataProviderDescription") {
 			t.Error("detail projection omitted dataProviderDescription")
 		}
+		if !strings.Contains(payload.Query, "notes") {
+			t.Error("detail projection omitted transaction notes")
+		}
 		if !strings.Contains(payload.Query, "transactions_count: transactionCount") {
 			t.Error("detail projection used the list-only merchant count field")
 		}
-		return monarchResponse(http.StatusOK, `{"data":{"getTransaction":{"id":"txn","amount":"-3.00","date":"2026-07-25","data_provider_description":"CARD PURCHASE","has_split_transactions":true,"category":{"id":"cat","name":"Food","order":2,"icon":"fork","system_category":"FOOD","is_system_category":true,"is_disabled":false,"updated_at":"u","created_at":"c","group":{"id":"group","name":"Living","type":"expense"}},"merchant":{"id":"merchant","name":"Cafe","transactions_count":7},"account":{"id":"account","display_name":"Checking"},"split_transactions":[{"id":"split","amount":"-3.00","category":null,"merchant":null}],"goal":null}}}`), nil
+		return monarchResponse(http.StatusOK, `{"data":{"getTransaction":{"id":"txn","amount":"-3.00","date":"2026-07-25","data_provider_description":"CARD PURCHASE","notes":"Parent note","has_split_transactions":true,"category":{"id":"cat","name":"Food","order":2,"icon":"fork","system_category":"FOOD","is_system_category":true,"is_disabled":false,"updated_at":"u","created_at":"c","group":{"id":"group","name":"Living","type":"expense"}},"merchant":{"id":"merchant","name":"Cafe","transactions_count":7},"account":{"id":"account","display_name":"Checking"},"split_transactions":[{"id":"split","amount":"-3.00","notes":"Split note","category":null,"merchant":null}],"goal":null}}}`), nil
 	}))
 	result, err := client.GetTransaction(context.Background(), "txn")
 	if err != nil {
 		t.Fatal(err)
 	}
 	transaction := result.Transaction
-	if transaction.DataProviderDescription != "CARD PURCHASE" || !transaction.HasSplitTransactions {
+	if transaction.DataProviderDescription != "CARD PURCHASE" || transaction.Notes != "Parent note" || !transaction.HasSplitTransactions {
 		t.Fatalf("detail projection lost scalar fields: %+v", transaction)
 	}
 	if transaction.Category == nil || transaction.Category.Group.Type != "expense" || transaction.Merchant == nil || transaction.Merchant.TransactionsCount != 7 {
 		t.Fatalf("detail projection lost relationship fields: %+v", transaction)
 	}
-	if len(transaction.SplitTransactions) != 1 || transaction.SplitTransactions[0].Category != nil || transaction.SplitTransactions[0].Merchant != nil {
+	if len(transaction.SplitTransactions) != 1 || transaction.SplitTransactions[0].Notes != "Split note" ||
+		transaction.SplitTransactions[0].Category != nil || transaction.SplitTransactions[0].Merchant != nil {
 		t.Fatalf("nullable split relationships were fabricated: %+v", transaction.SplitTransactions)
 	}
 	if transaction.Goal != nil {

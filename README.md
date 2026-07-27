@@ -97,6 +97,9 @@ monarch transactions list \
   --output json
 ```
 
+Transaction JSON includes notes and native split details (amount, notes,
+category, and merchant) when Monarch returns them.
+
 - JSON and piped table output return one bounded page.
 - The JSON response includes
   an opaque `next_cursor` when another page is available.

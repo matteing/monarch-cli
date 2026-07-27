@@ -33,7 +33,7 @@ func registerTools(server *mcp.Server, service monarch.Service) {
 	addReadOnlyTool(server, &mcp.Tool{
 		Name:        "monarch_transactions_list",
 		Title:       "List Monarch transactions",
-		Description: fmt.Sprintf("List or search transactions with optional date and ID filters. Results are capped at %d and paginated with an opaque cursor.", monarch.MaxTransactionPageSize),
+		Description: fmt.Sprintf("List or search transactions, including notes and split details, with optional date and ID filters. Results are capped at %d and paginated with an opaque cursor.", monarch.MaxTransactionPageSize),
 		InputSchema: transactionsSchema(),
 	}, func(ctx context.Context, input monarch.ListTransactionsParams) (monarch.TransactionPage, error) {
 		return service.ListTransactions(ctx, input)
@@ -42,7 +42,7 @@ func registerTools(server *mcp.Server, service monarch.Service) {
 	addReadOnlyTool(server, &mcp.Tool{
 		Name:        "monarch_transaction_get",
 		Title:       "Get a Monarch transaction",
-		Description: "Get one transaction and its category, merchant, account, tags, notes, and attachment metadata.",
+		Description: "Get one transaction and its category, merchant, account, tags, notes, split details, and attachment metadata.",
 		InputSchema: transactionSchema(),
 	}, func(ctx context.Context, input TransactionInput) (monarch.TransactionResult, error) {
 		return service.GetTransaction(ctx, input.ID)
